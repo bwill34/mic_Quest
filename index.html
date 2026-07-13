@@ -11,7 +11,7 @@
         .page { display: none; max-width: 800px; margin: auto; padding: 20px; } .page.active { display: block; }
         .login-box { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-top: 100px; }
         input[type="text"] { padding: 15px; width: 80%; max-width: 300px; border-radius: 10px; border: 2px solid #ccc; font-size: 18px; text-align: center; margin-bottom: 10px; }
-        .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0; margin-top: 20px; }
+        .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0; margin-top: 20px; flex-wrap: wrap; gap: 15px;}
         .avatar-display { width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; }
         .frame-none { border: 3px solid transparent; } .frame-gold { border: 4px solid #ffd700; box-shadow: 0 0 10px #ffd700; } .frame-fire { border: 4px solid #ff3d00; box-shadow: 0 0 15px #ff3d00; }
         .nav-tabs { display: flex; background: white; border-radius: 0 0 15px 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -30,6 +30,10 @@
         .spinner { border: 8px solid #f3f3f3; border-top: 8px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .select-item { width: 50px; height: 50px; border-radius: 50%; font-size: 30px; display: inline-flex; justify-content: center; align-items: center; border: 3px solid #ccc; cursor: pointer; margin:5px; } .select-item.selected { border-color: var(--primary); background: #e0f7fa; }
+        
+        /* ตกแต่งกล่องคะแนนให้ดูแยกส่วนกันชัดเจน */
+        .score-box { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .coin-box { background: white; color: #ff9800; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -44,7 +48,6 @@
     </div>
 
     <div id="mainPage" class="page">
-        <!-- 🌟 ปุ่มรีเฟรชอัพเดท -->
         <button onclick="refreshData()" class="btn" style="background:#e0f7fa; color:var(--primary); width:100%; margin-bottom:10px;">🔄 อัปเดตข้อมูล / กระดานเควส</button>
 
         <div class="header">
@@ -55,7 +58,12 @@
                     <div id="headerRank" style="font-size: 14px; color: #b2ebf2;">ระดับ: -</div>
                 </div>
             </div>
-            <div style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 18px;">💰 <span id="headerPoints">0</span></div>
+            
+            <!-- 🌟 แสดงกระเป๋าคะแนน 2 ใบ -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <div class="score-box">🏆 คะแนนเลื่อนยศ: <span id="headerPoints">0</span></div>
+                <div class="coin-box">💰 เหรียญช็อปปิ้ง: <span id="headerCoins">0</span></div>
+            </div>
         </div>
 
         <div class="nav-tabs">
@@ -95,13 +103,16 @@
     </div>
 
     <script>
-        // 🚨 วาง URL ตรงนี้ 🚨
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwtDH4lSd2PeYnMmtEpavBw8S-tjxzbvqwgRg-En2FIQv23is1aRGl6gO_Jo1WPJf6P/exec";
-        
+        // ==========================================
+        // 🚨 วาง URL ของ Web App ตรงนี้ 🚨
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLoxr1Jc-tIu0jVbt9ijbio98M7ZetfeTPjHf_AKFY1qPXFIhbKsG9kNDqbKcVa__g1g/exec";
+        // ==========================================
+
         let allQ = [], allS = [], allU = [], allR = [];
-        let curU = { id: "", name: "", avatar: "👦", frame: "frame-none", points: 0, completedQuests: [] };
         
-        // 🌟 ระบบเสียง Web Audio API (ไม่ต้องต่อเน็ตเพิ่ม)
+        // 🌟 เพิ่มตัวแปร coins เข้ามาในระบบผู้ใช้
+        let curU = { id: "", name: "", avatar: "👦", frame: "frame-none", points: 0, coins: 0, completedQuests: [] };
+        
         const aCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSfx(type) {
             if(aCtx.state === 'suspended') aCtx.resume();
@@ -111,16 +122,16 @@
             if(type === 'correct') { osc.type='sine'; osc.frequency.setValueAtTime(600, aCtx.currentTime); osc.frequency.setValueAtTime(800, aCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, aCtx.currentTime); osc.start(); osc.stop(aCtx.currentTime + 0.3); }
             if(type === 'wrong') { osc.type='sawtooth'; osc.frequency.setValueAtTime(200, aCtx.currentTime); osc.frequency.setValueAtTime(150, aCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.1, aCtx.currentTime); osc.start(); osc.stop(aCtx.currentTime + 0.3); }
         }
-        document.addEventListener('click', () => { if(aCtx.state === 'suspended') aCtx.resume(); }); // เปิดเสียงเมื่อผู้ใช้กดครั้งแรก
+        document.addEventListener('click', () => { if(aCtx.state === 'suspended') aCtx.resume(); }); 
 
         window.onload = loadData;
         async function loadData() {
-            if(!SCRIPT_URL.includes("http")) return alert("ใส่ SCRIPT_URL ก่อนครับ");
+            if(!SCRIPT_URL.includes("http")) return alert("อย่าลืมใส่ SCRIPT_URL ในโค้ดนะครับ");
             sl("กำลังโหลดข้อมูล...");
             try {
                 const res = await (await fetch(SCRIPT_URL)).json();
                 allQ = res.quests||[]; allS = res.shop||[]; allU = res.users||[]; allR = res.ranks||[];
-                hl(); if(curU.id !== "") refreshUI(); // ถ้ารีเฟรชตอนเข้าระบบแล้ว
+                hl(); if(curU.id !== "") refreshUI(); 
             } catch(e) { alert("ล้มเหลว"); hl(); }
         }
 
@@ -130,8 +141,20 @@
             playSfx('click');
             const id = document.getElementById('loginId').value.trim(); if(!id) return;
             const u = allU.find(x => String(x.UserID) === id);
-            if(u) curU = { id: id, name: u.DisplayName||"น้อง"+id, avatar: u.Avatar||"👦", frame: u.Frame||"frame-none", points: Number(u.TotalPoints)||0, completedQuests: u.CompletedQuests?String(u.CompletedQuests).split(','):[] };
-            else curU = { id: id, name: "น้อง "+id, avatar: "👦", frame: "frame-none", points: 0, completedQuests: [] };
+            if(u) {
+                curU = { 
+                    id: id, 
+                    name: u.DisplayName||"น้อง"+id, 
+                    avatar: u.Avatar||"👦", 
+                    frame: u.Frame||"frame-none", 
+                    points: Number(u.TotalPoints)||0, 
+                    // ดึงข้อมูลเหรียญช็อปปิ้งมา ถ้าเด็กเก่ายังไม่มีระบบนี้ ให้คัดลอกแต้มเดิมมาเป็นทุนเริ่มต้น
+                    coins: (u.Coins !== "" && u.Coins !== undefined) ? Number(u.Coins) : (Number(u.TotalPoints)||0),
+                    completedQuests: u.CompletedQuests?String(u.CompletedQuests).split(','):[] 
+                };
+            } else { 
+                curU = { id: id, name: "น้อง "+id, avatar: "👦", frame: "frame-none", points: 0, coins: 0, completedQuests: [] }; 
+            }
             document.getElementById('loginPage').classList.remove('active'); document.getElementById('mainPage').classList.add('active');
             refreshUI(); syncDB("เข้าสู่ระบบ", "เริ่มเล่นเกม");
         }
@@ -139,50 +162,55 @@
         function getRankName(pts) {
             if(!allR.length) return "นักอ่าน";
             let rName = allR[0].RankName;
-            // เรียงลำดับจากน้อยไปมาก
             const sortedRanks = [...allR].sort((a,b)=> Number(a.MinPoints) - Number(b.MinPoints));
             for(let r of sortedRanks) { if(pts >= Number(r.MinPoints)) rName = r.RankName; }
             return rName;
         }
 
         function refreshUI() {
-            document.getElementById('headerName').innerText = curU.name; document.getElementById('headerPoints').innerText = curU.points;
+            document.getElementById('headerName').innerText = curU.name; 
+            document.getElementById('headerPoints').innerText = curU.points; 
+            document.getElementById('headerCoins').innerText = curU.coins; 
             document.getElementById('headerAvatar').innerText = curU.avatar; document.getElementById('headerAvatar').className = "avatar-display " + curU.frame;
-            document.getElementById('headerRank').innerText = "ระดับ: " + getRankName(curU.points);
+            document.getElementById('headerRank').innerText = "ระดับ: " + getRankName(curU.points); // คำนวณยศจากคะแนนสะสมเท่านั้น
             
-            // Render Quests
             const qb = document.getElementById('qBox'); qb.innerHTML = "";
             let availQ = allQ.filter(q => !curU.completedQuests.includes(String(q.QuestID)));
             if(!availQ.length) qb.innerHTML = "<p>🎉 ทำครบหมดแล้ว เก่งมาก!</p>";
             availQ.forEach(q => {
                 const isSet = String(q.IsSet) === "true";
-                qb.innerHTML += `<div class="card"><div style="position:absolute;top:10px;right:-25px;background:#4caf50;color:white;padding:5px 30px;transform:rotate(45deg);font-size:12px;">+${q.RewardPoints}</div>
+                qb.innerHTML += `<div class="card"><div style="position:absolute;top:10px;right:-25px;background:#4caf50;color:white;padding:5px 30px;transform:rotate(45deg);font-size:12px;">+${q.RewardPoints} เหรียญ</div>
                 <h3 style="color:var(--primary);">${q.Title} ${isSet ? "(แบบชุด)" : ""}</h3><div style="color:#ff9800; margin:10px;">${q.Difficulty}</div><p style="color:#777;">ประเภท: ${q.Type}</p>
                 <button class="btn btn-primary" style="width:100%;" onclick="openGame('${q.QuestID}')">รับภารกิจ</button></div>`;
             });
 
-            // Render Shop
             const sb = document.getElementById('sBox'); sb.innerHTML = "";
             allS.forEach(s => {
                 let img = s.Icon.startsWith("http") ? `<img src="${s.Icon}" style="width:80px;height:80px;object-fit:contain;margin:10px;">` : `<div style="font-size:60px;margin:10px;">${s.Icon}</div>`;
-                sb.innerHTML += `<div class="card">${img}<h3>${s.ItemName}</h3><p style="color:#d32f2f;font-weight:bold;">${s.PointsRequired} แต้ม</p><button class="btn btn-secondary" style="width:100%;" onclick="buy('${s.ItemID}',${s.PointsRequired},'${s.ItemName}')">แลก</button></div>`;
+                sb.innerHTML += `<div class="card">${img}<h3>${s.ItemName}</h3><p style="color:#d32f2f;font-weight:bold;">${s.PointsRequired} เหรียญ</p><button class="btn btn-secondary" style="width:100%;" onclick="buy('${s.ItemID}',${s.PointsRequired},'${s.ItemName}')">แลก</button></div>`;
             });
 
-            // Profile
             document.getElementById('eName').value = curU.name; tA = curU.avatar; tF = curU.frame;
         }
 
         async function syncDB(act="", det="") {
             sl("กำลังบันทึก...");
-            let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, completedQuests: curU.completedQuests };
+            let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, coins: curU.coins, completedQuests: curU.completedQuests };
             if(act) pay.logData = { action: act, detail: det };
             try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(pay) }); hl(); } catch(e){ hl(); }
         }
 
+        // 🌟 ตอนซื้อของ หักเฉพาะเหรียญช็อปปิ้งเท่านั้น!
         function buy(id, cost, name) {
             playSfx('click');
-            if(curU.points >= cost) { if(confirm(`แลก ${name} ไหม?`)) { curU.points -= cost; refreshUI(); syncDB("แลกรางวัล", name); alert("แคปจอไปรับของเลย!"); } }
-            else alert("แต้มไม่พอจ้า");
+            if(curU.coins >= cost) { 
+                if(confirm(`แลก ${name} ไหม?`)) { 
+                    curU.coins -= cost; // 👈 หักแค่เหรียญช็อปปิ้ง
+                    refreshUI(); 
+                    syncDB("แลกรางวัล", name); 
+                    alert("แลกสำเร็จ แคปจอไปรับของเลย!"); 
+                } 
+            } else alert("เหรียญช็อปปิ้งไม่พอจ้า ไปอ่านหนังสือเพิ่มกันเถอะ!");
         }
 
         let tA="", tF="";
@@ -193,15 +221,20 @@
         function sl(txt) { document.getElementById('loadTxt').innerText=txt; document.getElementById('loadingOverlay').style.display='flex'; }
         function hl() { document.getElementById('loadingOverlay').style.display='none'; }
 
-        // 🌟 ระบบเกม: รองรับเควสแบบชุด และ ไมค์เปิดค้าง
+        // ระบบเกม
         let aQ = null; let qSet = []; let qIdx = 0; let isRec = false; let keepListening = false;
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const rec = SR ? new SR() : null;
         if(rec) {
-            rec.lang = 'th-TH'; rec.interimResults = false;
-            rec.onresult = function(e) { checkAns(e.results[0][0].transcript.trim()); };
+            rec.lang = 'th-TH'; 
+            rec.interimResults = false;
+            rec.continuous = true; // 🌟 ระบบฟังต่อเนื่อง ไม่ตัดไมค์เอง
+
+            rec.onresult = function(e) { 
+                const lastResultIndex = e.results.length - 1;
+                checkAns(e.results[lastResultIndex][0].transcript.trim()); 
+            };
             rec.onerror = function(e) { document.getElementById('gStatus').innerHTML = `<span style="color:#f44336;">ไม่ได้ยินเสียง ลองพูดใหม่นะครับ</span>`; };
             rec.onend = function() { 
-                // 🌟 ระบบ Auto Restart Mic ถ้ายังไม่ผ่าน
                 if(keepListening) { 
                     try { rec.start(); } catch(e){} 
                 } else {
@@ -213,7 +246,7 @@
         function openGame(id) {
             playSfx('click');
             aQ = allQ.find(x => String(x.QuestID) === String(id));
-            qSet = String(aQ.Content).split('|').map(s=>s.trim()).filter(s=>s!==""); // แตกข้อความแบบชุด
+            qSet = String(aQ.Content).split('|').map(s=>s.trim()).filter(s=>s!==""); 
             qIdx = 0;
             document.getElementById('gTitle').innerText = aQ.Title;
             updateQuestView();
@@ -245,34 +278,29 @@
         function checkAns(spk) {
             const tgt = qSet[qIdx];
             const cSpk = spk.replace(/\s/g, ''); const cTgt = tgt.replace(/\s/g, '');
-            // ถูกต้อง (หรือถูกครึ่งนึงสำหรับเรื่องยาว)
             if(cSpk === cTgt || (aQ.Type === 'story' && cSpk.includes(cTgt.substring(0, Math.floor(cTgt.length/2))))) {
                 playSfx('correct');
                 qIdx++;
                 if(qIdx >= qSet.length) {
-                    // ทำครบชุดแล้ว
                     keepListening = false; rec.stop();
-                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมาก! ได้รับ ${aQ.RewardPoints} แต้ม</span>`;
-                    curU.points += Number(aQ.RewardPoints); curU.completedQuests.push(String(aQ.QuestID));
+                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมาก! ได้รับ ${aQ.RewardPoints} คะแนน</span>`;
+                    
+                    // 🌟 เพิ่มคะแนนใส่ทั้งกระเป๋ายศและกระเป๋าช็อปปิ้ง
+                    curU.points += Number(aQ.RewardPoints); 
+                    curU.coins += Number(aQ.RewardPoints); 
+                    
+                    curU.completedQuests.push(String(aQ.QuestID));
                     refreshUI(); syncDB("ทำภารกิจสำเร็จ", aQ.Title);
                     setTimeout(() => { closeGame(); }, 2000);
                 } else {
-                    // ผ่าน 1 ข้อ ไปข้อถัดไป
                     document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เยี่ยม! ไปข้อต่อไปเลย</span>`;
                     updateQuestView();
                 }
             } else {
-                // ตอบผิด
                 playSfx('wrong');
-                // 🌟 โชว์ให้ชัดเจนว่าระบบได้ยินคำว่าอะไร
                 document.getElementById('gStatus').innerHTML = `<span style="color:#f44336; font-size:18px;">ระบบได้ยิน: <b>"${spk}"</b><br>เกือบถูกแล้ว ลองอ่านใหม่อีกรอบนะ!</span>`;
             }
         }
-
-
-
-
-
     </script>
 </body>
 </html>
