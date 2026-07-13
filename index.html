@@ -11,6 +11,8 @@
         .page { display: none; max-width: 800px; margin: auto; padding: 20px; } .page.active { display: block; }
         .login-box { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-top: 100px; }
         input[type="text"] { padding: 15px; width: 80%; max-width: 300px; border-radius: 10px; border: 2px solid #ccc; font-size: 18px; text-align: center; margin-bottom: 10px; }
+        select.login-select { padding: 15px; width: 80%; max-width: 330px; border-radius: 10px; border: 2px solid #ccc; font-size: 18px; text-align: center; margin-bottom: 20px; font-family: 'Sarabun'; }
+        
         .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0; margin-top: 20px; flex-wrap: wrap; gap: 15px;}
         .avatar-display { width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; }
         .frame-none { border: 3px solid transparent; } .frame-gold { border: 4px solid #ffd700; box-shadow: 0 0 10px #ffd700; } .frame-fire { border: 4px solid #ff3d00; box-shadow: 0 0 15px #ff3d00; }
@@ -20,18 +22,20 @@
         .card { background: white; border-radius: 15px; padding: 20px; text-align: center; border: 2px solid #eee; position: relative; }
         .btn { border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold; font-family:'Sarabun'; }
         .btn-primary { background: var(--primary); color: white; } .btn-secondary { background: var(--secondary); color: white; }
+        
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:100; }
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; text-align: center; }
-        .reading-text { font-size: 30px; font-weight: bold; margin: 20px 0; padding: 20px; background: #fff8e1; border-radius: 15px; border: 2px dashed #ffc107; }
+        .reading-text { font-size: 30px; font-weight: bold; margin: 20px 0; padding: 20px; background: #fff8e1; border-radius: 15px; border: 2px dashed #ffc107; max-height: 400px; overflow-y: auto;}
+        
         .mic-btn { background: #4caf50; color: white; font-size: 20px; padding: 15px 40px; border-radius: 50px; cursor: pointer; margin:10px; border:none; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); }
         .mic-btn.recording { background: #f44336; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
         #loadingOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; justify-content:center; align-items:center; flex-direction:column; }
         .spinner { border: 8px solid #f3f3f3; border-top: 8px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .select-item { width: 50px; height: 50px; border-radius: 50%; font-size: 30px; display: inline-flex; justify-content: center; align-items: center; border: 3px solid #ccc; cursor: pointer; margin:5px; } .select-item.selected { border-color: var(--primary); background: #e0f7fa; }
         
-        /* ตกแต่งกล่องคะแนนให้ดูแยกส่วนกันชัดเจน */
         .score-box { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 5px; }
         .coin-box { background: white; color: #ff9800; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
@@ -43,6 +47,12 @@
         <div class="login-box">
             <h1 style="color: var(--primary);">🌟 อัศวินนักอ่าน</h1> <p>โรงเรียนบ้านหนองโสน</p>
             <input type="text" id="loginId" placeholder="รหัสนักเรียน"><br>
+            
+            <!-- 🌟 เพิ่มช่องเลือกระดับชั้น -->
+            <select id="loginClass" class="login-select">
+                <option value="">-- กรุณาเลือกระดับชั้น --</option>
+            </select><br>
+
             <button class="btn btn-primary" onclick="login()">เข้าสู่ระบบ</button>
         </div>
     </div>
@@ -59,7 +69,6 @@
                 </div>
             </div>
             
-            <!-- 🌟 แสดงกระเป๋าคะแนน 2 ใบ -->
             <div style="display: flex; flex-direction: column; align-items: flex-end;">
                 <div class="score-box">🏆 คะแนนเลื่อนยศ: <span id="headerPoints">0</span></div>
                 <div class="coin-box">💰 เหรียญช็อปปิ้ง: <span id="headerCoins">0</span></div>
@@ -77,7 +86,10 @@
         
         <div id="pTab" class="tab-content" style="display: none;">
             <div style="background: white; padding: 20px; border-radius: 15px;">
-                <label>ชื่อ:</label><input type="text" id="eName" style="width:100%;"><br>
+                <label>ชื่อ:</label><input type="text" id="eName" style="width:100%; margin-bottom:10px;">
+                <label>ระดับชั้น:</label>
+                <select id="eClass" style="width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;"></select>
+                
                 <label>ตัวละคร:</label> 
                 <div><div class="select-item" onclick="selP('a','👦',this)">👦</div><div class="select-item" onclick="selP('a','👧',this)">👧</div><div class="select-item" onclick="selP('a','🐱',this)">🐱</div></div>
                 <label>กรอบรูป:</label> 
@@ -88,7 +100,6 @@
         </div>
     </div>
 
-    <!-- หน้าต่างเล่นเกม -->
     <div id="gameModal" class="modal">
         <div class="modal-content">
             <h2 id="gTitle" style="color: var(--primary);">ภารกิจ</h2>
@@ -105,13 +116,11 @@
     <script>
         // ==========================================
         // 🚨 วาง URL ของ Web App ตรงนี้ 🚨
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLoxr1Jc-tIu0jVbt9ijbio98M7ZetfeTPjHf_AKFY1qPXFIhbKsG9kNDqbKcVa__g1g/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_Z_MPVLcwvfG7KOOKxNKAzGL71INWkY4D5ha4bbOwo8vUFJ35js11qOp-spBA8-ciOg/exec";
         // ==========================================
 
-        let allQ = [], allS = [], allU = [], allR = [];
-        
-        // 🌟 เพิ่มตัวแปร coins เข้ามาในระบบผู้ใช้
-        let curU = { id: "", name: "", avatar: "👦", frame: "frame-none", points: 0, coins: 0, completedQuests: [] };
+        let allQ = [], allS = [], allU = [], allR = [], allClasses = [];
+        let curU = { id: "", name: "", avatar: "👦", frame: "frame-none", points: 0, coins: 0, className: "", completedQuests: [] };
         
         const aCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSfx(type) {
@@ -130,7 +139,14 @@
             sl("กำลังโหลดข้อมูล...");
             try {
                 const res = await (await fetch(SCRIPT_URL)).json();
-                allQ = res.quests||[]; allS = res.shop||[]; allU = res.users||[]; allR = res.ranks||[];
+                allQ = res.quests||[]; allS = res.shop||[]; allU = res.users||[]; allR = res.ranks||[]; allClasses = res.classes||[];
+                
+                // นำระดับชั้นมาใส่ใน Dropdown ให้เด็กเลือก
+                let classOptions = `<option value="">-- เลือกระดับชั้น --</option>`;
+                allClasses.forEach(c => { classOptions += `<option value="${c.ClassName}">${c.ClassName}</option>`; });
+                document.getElementById('loginClass').innerHTML = classOptions;
+                document.getElementById('eClass').innerHTML = classOptions;
+                
                 hl(); if(curU.id !== "") refreshUI(); 
             } catch(e) { alert("ล้มเหลว"); hl(); }
         }
@@ -140,44 +156,56 @@
         function login() {
             playSfx('click');
             const id = document.getElementById('loginId').value.trim(); if(!id) return;
+            const selClass = document.getElementById('loginClass').value;
+            
             const u = allU.find(x => String(x.UserID) === id);
+            
+            // ตรวจสอบว่าเด็กรหัสนี้เคยเลือกระดับชั้นไว้แล้วหรือยัง
+            let existingClass = (u && u.ClassName) ? u.ClassName : "";
+            let finalClass = existingClass || selClass;
+
+            if(!finalClass) {
+                return alert("กรุณาเลือกระดับชั้นของคุณก่อนเข้าสู่ระบบครับ");
+            }
+
             if(u) {
                 curU = { 
-                    id: id, 
-                    name: u.DisplayName||"น้อง"+id, 
-                    avatar: u.Avatar||"👦", 
-                    frame: u.Frame||"frame-none", 
-                    points: Number(u.TotalPoints)||0, 
-                    // ดึงข้อมูลเหรียญช็อปปิ้งมา ถ้าเด็กเก่ายังไม่มีระบบนี้ ให้คัดลอกแต้มเดิมมาเป็นทุนเริ่มต้น
-                    coins: (u.Coins !== "" && u.Coins !== undefined) ? Number(u.Coins) : (Number(u.TotalPoints)||0),
-                    completedQuests: u.CompletedQuests?String(u.CompletedQuests).split(','):[] 
+                    id: id, name: u.DisplayName||"น้อง"+id, avatar: u.Avatar||"👦", frame: u.Frame||"frame-none", 
+                    points: Number(u.TotalPoints)||0, coins: (u.Coins !== "" && u.Coins !== undefined) ? Number(u.Coins) : (Number(u.TotalPoints)||0),
+                    className: finalClass, completedQuests: u.CompletedQuests?String(u.CompletedQuests).split(','):[] 
                 };
             } else { 
-                curU = { id: id, name: "น้อง "+id, avatar: "👦", frame: "frame-none", points: 0, coins: 0, completedQuests: [] }; 
+                curU = { id: id, name: "น้อง "+id, avatar: "👦", frame: "frame-none", points: 0, coins: 0, className: finalClass, completedQuests: [] }; 
             }
             document.getElementById('loginPage').classList.remove('active'); document.getElementById('mainPage').classList.add('active');
             refreshUI(); syncDB("เข้าสู่ระบบ", "เริ่มเล่นเกม");
         }
 
         function getRankName(pts) {
-            if(!allR.length) return "นักอ่าน";
-            let rName = allR[0].RankName;
+            if(!allR.length) return "นักอ่าน"; let rName = allR[0].RankName;
             const sortedRanks = [...allR].sort((a,b)=> Number(a.MinPoints) - Number(b.MinPoints));
             for(let r of sortedRanks) { if(pts >= Number(r.MinPoints)) rName = r.RankName; }
             return rName;
         }
 
         function refreshUI() {
-            document.getElementById('headerName').innerText = curU.name; 
+            document.getElementById('headerName').innerText = curU.name + (curU.className ? ` (${curU.className})` : ""); 
             document.getElementById('headerPoints').innerText = curU.points; 
             document.getElementById('headerCoins').innerText = curU.coins; 
             document.getElementById('headerAvatar').innerText = curU.avatar; document.getElementById('headerAvatar').className = "avatar-display " + curU.frame;
-            document.getElementById('headerRank').innerText = "ระดับ: " + getRankName(curU.points); // คำนวณยศจากคะแนนสะสมเท่านั้น
+            document.getElementById('headerRank').innerText = "ระดับ: " + getRankName(curU.points);
             
             const qb = document.getElementById('qBox'); qb.innerHTML = "";
+            
+            // 🌟 กรองเควส ให้แสดงเฉพาะที่ตรงกับระดับชั้นของเด็ก หรือ เควสที่ให้เล่นได้ทุกคน (all)
             let availQ = allQ.filter(q => !curU.completedQuests.includes(String(q.QuestID)));
-            if(!availQ.length) qb.innerHTML = "<p>🎉 ทำครบหมดแล้ว เก่งมาก!</p>";
-            availQ.forEach(q => {
+            let filteredQ = availQ.filter(q => {
+                let assigned = String(q.AssignedClasses || "all");
+                return assigned.includes("all") || assigned.includes(curU.className);
+            });
+
+            if(!filteredQ.length) qb.innerHTML = "<p>🎉 ทำครบหมดแล้ว หรือยังไม่มีภารกิจสำหรับระดับชั้นนี้!</p>";
+            filteredQ.forEach(q => {
                 const isSet = String(q.IsSet) === "true";
                 qb.innerHTML += `<div class="card"><div style="position:absolute;top:10px;right:-25px;background:#4caf50;color:white;padding:5px 30px;transform:rotate(45deg);font-size:12px;">+${q.RewardPoints} เหรียญ</div>
                 <h3 style="color:var(--primary);">${q.Title} ${isSet ? "(แบบชุด)" : ""}</h3><div style="color:#ff9800; margin:10px;">${q.Difficulty}</div><p style="color:#777;">ประเภท: ${q.Type}</p>
@@ -190,32 +218,35 @@
                 sb.innerHTML += `<div class="card">${img}<h3>${s.ItemName}</h3><p style="color:#d32f2f;font-weight:bold;">${s.PointsRequired} เหรียญ</p><button class="btn btn-secondary" style="width:100%;" onclick="buy('${s.ItemID}',${s.PointsRequired},'${s.ItemName}')">แลก</button></div>`;
             });
 
-            document.getElementById('eName').value = curU.name; tA = curU.avatar; tF = curU.frame;
+            document.getElementById('eName').value = curU.name; 
+            document.getElementById('eClass').value = curU.className;
+            tA = curU.avatar; tF = curU.frame;
         }
 
         async function syncDB(act="", det="") {
             sl("กำลังบันทึก...");
-            let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, coins: curU.coins, completedQuests: curU.completedQuests };
+            let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, coins: curU.coins, className: curU.className, completedQuests: curU.completedQuests };
             if(act) pay.logData = { action: act, detail: det };
             try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(pay) }); hl(); } catch(e){ hl(); }
         }
 
-        // 🌟 ตอนซื้อของ หักเฉพาะเหรียญช็อปปิ้งเท่านั้น!
-        function buy(id, cost, name) {
+        async function buy(id, cost, name) {
             playSfx('click');
             if(curU.coins >= cost) { 
-                if(confirm(`แลก ${name} ไหม?`)) { 
-                    curU.coins -= cost; // 👈 หักแค่เหรียญช็อปปิ้ง
-                    refreshUI(); 
-                    syncDB("แลกรางวัล", name); 
-                    alert("แลกสำเร็จ แคปจอไปรับของเลย!"); 
+                if(confirm(`ยืนยันการใช้ ${cost} เหรียญ เพื่อขอแลก ${name} ไหม?`)) { 
+                    curU.coins -= cost; refreshUI(); sl("กำลังส่งคำขอไปที่คุณครู...");
+                    try {
+                        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: "requestRedeem", redeemId: "RD" + Date.now(), userId: curU.id, userName: curU.name, itemName: name, cost: cost }) });
+                        await syncDB("ขอแลกรางวัล", name); 
+                        hl(); alert("✅ ส่งคำขอสำเร็จ! เดินไปแจ้งคุณครูเพื่อรับของได้เลยครับ"); 
+                    } catch(e) { hl(); alert("เกิดข้อผิดพลาดในการส่งคำขอ"); }
                 } 
             } else alert("เหรียญช็อปปิ้งไม่พอจ้า ไปอ่านหนังสือเพิ่มกันเถอะ!");
         }
 
         let tA="", tF="";
         function selP(t, v, el) { playSfx('click'); if(t==='a') tA=v; if(t==='f') tF=v; Array.from(el.parentElement.children).forEach(c=>c.classList.remove('selected')); el.classList.add('selected'); }
-        function saveProfile() { playSfx('click'); curU.name = document.getElementById('eName').value; curU.avatar = tA; curU.frame = tF; refreshUI(); syncDB("เปลี่ยนโปรไฟล์", "-"); }
+        function saveProfile() { playSfx('click'); curU.name = document.getElementById('eName').value; curU.className = document.getElementById('eClass').value; curU.avatar = tA; curU.frame = tF; refreshUI(); syncDB("เปลี่ยนโปรไฟล์", "-"); }
 
         function switchTab(id) { playSfx('click'); document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none'); document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.getElementById(id).style.display='block'; event.currentTarget.classList.add('active'); }
         function sl(txt) { document.getElementById('loadTxt').innerText=txt; document.getElementById('loadingOverlay').style.display='flex'; }
@@ -225,34 +256,19 @@
         let aQ = null; let qSet = []; let qIdx = 0; let isRec = false; let keepListening = false;
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const rec = SR ? new SR() : null;
         if(rec) {
-            rec.lang = 'th-TH'; 
-            rec.interimResults = false;
-            rec.continuous = true; // 🌟 ระบบฟังต่อเนื่อง ไม่ตัดไมค์เอง
-
-            rec.onresult = function(e) { 
-                const lastResultIndex = e.results.length - 1;
-                checkAns(e.results[lastResultIndex][0].transcript.trim()); 
-            };
+            rec.lang = 'th-TH'; rec.interimResults = false; rec.continuous = true;
+            rec.onresult = function(e) { const lastResultIndex = e.results.length - 1; checkAns(e.results[lastResultIndex][0].transcript.trim()); };
             rec.onerror = function(e) { document.getElementById('gStatus').innerHTML = `<span style="color:#f44336;">ไม่ได้ยินเสียง ลองพูดใหม่นะครับ</span>`; };
-            rec.onend = function() { 
-                if(keepListening) { 
-                    try { rec.start(); } catch(e){} 
-                } else {
-                    isRec = false; document.getElementById('micBtn').innerText="🎤 กดเริ่มฟัง"; document.getElementById('micBtn').classList.remove('recording');
-                }
-            };
+            rec.onend = function() { if(keepListening) { try { rec.start(); } catch(e){} } else { isRec = false; document.getElementById('micBtn').innerText="🎤 กดเริ่มฟัง"; document.getElementById('micBtn').classList.remove('recording'); } };
         }
 
         function openGame(id) {
             playSfx('click');
             aQ = allQ.find(x => String(x.QuestID) === String(id));
-            qSet = String(aQ.Content).split('|').map(s=>s.trim()).filter(s=>s!==""); 
-            qIdx = 0;
-            document.getElementById('gTitle').innerText = aQ.Title;
-            updateQuestView();
+            qSet = String(aQ.Content).split('|').map(s=>s.trim()).filter(s=>s!==""); qIdx = 0;
+            document.getElementById('gTitle').innerText = aQ.Title; updateQuestView();
             document.getElementById('gStatus').innerHTML = "พร้อมแล้วกดปุ่มไมค์ <b>ครั้งเดียว</b> แล้วอ่านเลย!";
-            document.getElementById('gameModal').style.display = "flex";
-            keepListening = false;
+            document.getElementById('gameModal').style.display = "flex"; keepListening = false;
         }
 
         function updateQuestView() {
@@ -266,39 +282,22 @@
             playSfx('click');
             if(!rec) return alert("เบราว์เซอร์ไม่รองรับ แนะนำใช้ Chrome");
             if(isRec) { keepListening = false; rec.stop(); } 
-            else { 
-                keepListening = true; isRec = true; 
-                try { rec.start(); } catch(e){}
-                document.getElementById('micBtn').innerText="🔴 กำลังฟังตลอดเวลา... (กดเพื่อหยุด)"; 
-                document.getElementById('micBtn').classList.add('recording'); 
-                document.getElementById('gStatus').innerText="พูดได้เลยครับ 👂";
-            }
+            else { keepListening = true; isRec = true; try { rec.start(); } catch(e){} document.getElementById('micBtn').innerText="🔴 กำลังฟังตลอดเวลา... (กดเพื่อหยุด)"; document.getElementById('micBtn').classList.add('recording'); document.getElementById('gStatus').innerText="พูดได้เลยครับ 👂"; }
         }
 
         function checkAns(spk) {
             const tgt = qSet[qIdx];
             const cSpk = spk.replace(/\s/g, ''); const cTgt = tgt.replace(/\s/g, '');
             if(cSpk === cTgt || (aQ.Type === 'story' && cSpk.includes(cTgt.substring(0, Math.floor(cTgt.length/2))))) {
-                playSfx('correct');
-                qIdx++;
+                playSfx('correct'); qIdx++;
                 if(qIdx >= qSet.length) {
                     keepListening = false; rec.stop();
-                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมาก! ได้รับ ${aQ.RewardPoints} คะแนน</span>`;
-                    
-                    // 🌟 เพิ่มคะแนนใส่ทั้งกระเป๋ายศและกระเป๋าช็อปปิ้ง
-                    curU.points += Number(aQ.RewardPoints); 
-                    curU.coins += Number(aQ.RewardPoints); 
-                    
-                    curU.completedQuests.push(String(aQ.QuestID));
-                    refreshUI(); syncDB("ทำภารกิจสำเร็จ", aQ.Title);
-                    setTimeout(() => { closeGame(); }, 2000);
-                } else {
-                    document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เยี่ยม! ไปข้อต่อไปเลย</span>`;
-                    updateQuestView();
-                }
+                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมาก! ได้รับ ${aQ.RewardPoints} เหรียญ</span>`;
+                    curU.points += Number(aQ.RewardPoints); curU.coins += Number(aQ.RewardPoints); curU.completedQuests.push(String(aQ.QuestID));
+                    refreshUI(); syncDB("ทำภารกิจสำเร็จ", aQ.Title); setTimeout(() => { closeGame(); }, 2000);
+                } else { document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เยี่ยม! ไปข้อต่อไปเลย</span>`; updateQuestView(); }
             } else {
-                playSfx('wrong');
-                document.getElementById('gStatus').innerHTML = `<span style="color:#f44336; font-size:18px;">ระบบได้ยิน: <b>"${spk}"</b><br>เกือบถูกแล้ว ลองอ่านใหม่อีกรอบนะ!</span>`;
+                playSfx('wrong'); document.getElementById('gStatus').innerHTML = `<span style="color:#f44336; font-size:18px;">ระบบได้ยิน: <b>"${spk}"</b><br>เกือบถูกแล้ว ลองอ่านใหม่อีกรอบนะ!</span>`;
             }
         }
     </script>
