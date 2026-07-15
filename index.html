@@ -8,7 +8,7 @@
     <style>
         :root { --primary: #00838f; --secondary: #ff9800; --bg: #f0f2f5; }
         body { font-family: 'Sarabun'; background: var(--bg); margin: 0; padding: 0; color: #333; overflow-x: hidden; }
-        img { border: none; outline: none; } /* 🌟 ป้องกันขอบรูปหลอน */
+        img { border: none; outline: none; }
         .page { display: none; max-width: 850px; margin: auto; padding: 20px; } .page.active { display: block; }
         
         .login-box { background: white; padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-top: 50px; }
@@ -35,64 +35,101 @@
         .btn-primary { background: var(--primary); color: white; } .btn-secondary { background: var(--secondary); color: white; }
         .btn-disabled { background: #ccc; color: white; cursor: not-allowed; }
         
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:100; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; text-align: center; }
-        .reading-text { font-size: 35px; font-weight: bold; margin: 20px 0; padding: 20px; background: #fff8e1; border-radius: 15px; border: 2px dashed #ffc107; max-height: 400px; overflow-y: auto; letter-spacing: 1px;}
+        .avatar-header { width: 100px; height: 100px; border-radius: 15px; border: 3px solid white; display: flex; justify-content: center; align-items: center; background: white; overflow: hidden; flex-shrink: 0; position: relative;}
+        .avatar-header img.prof-img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-header img.frame-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0; z-index: 10; pointer-events: none;}
         
-        .mic-btn { background: #4caf50; color: white; font-size: 20px; padding: 15px 40px; border-radius: 50px; cursor: pointer; margin:10px; border:none; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); width: 100%; max-width: 300px;}
-        .mic-btn.recording { background: #f44336; animation: pulseMic 1.5s infinite; }
-        @keyframes pulseMic { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        
-        #loadingOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; justify-content:center; align-items:center; flex-direction:column; }
-        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .score-box { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 5px; text-align: right;}
-        .coin-box { background: white; color: #ff9800; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: right;}
-        
-        #creationAvatars { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .select-item { width: 80px; height: 80px; border-radius: 10px; font-size: 40px; display: flex; justify-content: center; align-items: center; border: 3px solid #ccc; cursor: pointer; background: white; overflow: hidden; } 
-        .select-item img { width: 100%; height: 100%; object-fit: contain; }
-        .select-item.selected { border-color: var(--primary); background: #e0f7fa; box-shadow: 0 0 10px rgba(0, 131, 143, 0.5); }
-        
-        .avatar-header { width: 150px; height: 150px; border-radius: 0; border: 3px solid white; display: flex; justify-content: center; align-items: center; background: white; overflow: hidden; flex-shrink: 0;}
-        .avatar-header img { width: 100%; height: 100%; object-fit: cover; }
-        
+        .prof-select-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .prof-item { width: 60px; height: 60px; border: 3px solid #ccc; border-radius: 10px; cursor: pointer; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 20px; background: #fff;}
+        .prof-item img { width:100%; height:100%; object-fit: cover;}
+        .prof-item.selected { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,131,143,0.5); background: #e0f7fa;}
+
         .avatar-wardrobe { position: relative; overflow: hidden; width: 100%; max-width: 700px; height: 450px; border-radius: 20px; margin: 0 auto 20px auto; border: 4px solid var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.1); background: #fff; transition: 0.3s; }
-        
         .avatar-wardrobe.edit-mode { max-width: 350px; background: #e0f7fa; }
         .avatar-wardrobe.edit-mode .char-group { transform: scale(1.4); transform-origin: bottom center; }
 
         .avatar-creation { position: relative; overflow: hidden; width: 250px; height: 350px; border-radius: 20px; margin: 0 auto 20px auto; border: 4px solid #ff9800; box-shadow: 0 10px 20px rgba(0,0,0,0.1); background: #fff8e1; }
 
-        .char-group { position: absolute; width: 250px; height: 90%; top: 5%; z-index: 2; transition: 0.3s;}
-        .partner-group { position: absolute; width: 250px; height: 90%; top: 5%; z-index: 1;}
+        .char-group, .partner-group { position: absolute; width: 250px; height: 90%; top: 5%; z-index: 2; transition: 0.3s;}
         .decor-item { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: flex; justify-content: center; align-items: center;}
         
         .draggable { cursor: grab; } .draggable:active { cursor: grabbing; }
-        .base-avatar-img, .layer-img { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: contain; 
-    object-position: bottom center; /* 🌟 ตัวนี้จะสั่งให้รูปภาพไปกองรวมกันที่ด้านล่าง */
-    pointer-events: none; 
-    position: absolute; 
-    bottom: 0; /* 🌟 สั่งให้ชิดขอบล่างสุด */
-    left: 0; 
-}
-        .emoji-layer { position: absolute; display: flex; justify-content: center; width: 100%; font-size: 50px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); pointer-events: none; }
-
-        .breathe-anim { animation: breathe 3s infinite ease-in-out; }
-        @keyframes breathe { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
-
+        .base-avatar-img, .layer-img { width: 100%; height: 100%; object-fit: contain; object-position: bottom center; pointer-events: none; position: absolute; bottom: 0; left: 0; }
+        
         .inv-card { background: white; border-radius: 10px; padding: 10px; text-align: center; border: 2px solid #ccc; cursor: pointer; transition: 0.2s; position: relative;}
         .inv-card.equipped { border-color: #4caf50; background: #e8f5e9; box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);}
         .new-badge { position:absolute; top:-8px; left:-8px; background:#f44336; color:white; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:12px; transform:rotate(-10deg); box-shadow:0 2px 5px rgba(0,0,0,0.2); z-index:10; }
+
+        /* 🌟 CSS กระดานจัดอันดับ (Leaderboard) */
+        .lb-card { display: flex; align-items: center; padding: 12px 15px; margin-bottom: 12px; border-radius: 15px; background: white; box-shadow: 0 3px 6px rgba(0,0,0,0.05); transition: 0.2s; border: 2px solid transparent;}
+        .lb-card:hover { transform: scale(1.02); }
+        .lb-card.top1 { background: #fffde7; border-color: #ffd700; box-shadow: 0 4px 10px rgba(255,215,0,0.3); }
+        .lb-card.top2 { background: #f5f5f5; border-color: #c0c0c0; }
+        .lb-card.top3 { background: #fff3e0; border-color: #cd7f32; }
+        .lb-card.me { border-color: var(--primary); background: #e0f7fa; border-width: 3px; }
+        .lb-rank { width: 45px; text-align: center; font-size: 24px; font-weight: bold; color: #555; flex-shrink: 0; }
+        
+        .mini-avatar-container { position: relative; width: 60px; height: 80px; flex-shrink: 0; overflow: hidden; border-radius: 8px; background: #e0f2f1; border: 2px solid #b2dfdb; margin: 0 15px; }
+        .mini-avatar-img { width: 100%; height: 100%; object-fit: contain; object-position: bottom center; position: absolute; bottom: 0; left: 0; pointer-events: none; }
+        .mini-layer { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom center; pointer-events: none; }
+        
+        .lb-info { flex: 1; text-align: left; overflow: hidden; }
+        .lb-name { font-size: 18px; font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-rankname { font-size: 13px; color: #777; background: #eee; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 3px;}
+        .lb-stats { text-align: right; flex-shrink: 0; }
+        .lb-score { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .lb-coins { font-size: 13px; color: #ff9800; font-weight: bold; }
+
+        /* 🌟 CSS Popup สวยงามใหม่ */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); justify-content:center; align-items:center; z-index:2000; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; position: relative;}
+        .reading-text { font-size: 35px; font-weight: bold; margin: 20px 0; padding: 20px; background: #fff8e1; border-radius: 15px; border: 2px dashed #ffc107; max-height: 400px; overflow-y: auto; letter-spacing: 1px;}
+        
+        .mic-btn { background: #4caf50; color: white; font-size: 20px; padding: 15px 40px; border-radius: 50px; cursor: pointer; margin:10px; border:none; box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); width: 100%; max-width: 300px;}
+        .mic-btn.recording { background: #f44336; animation: pulseMic 1.5s infinite; }
+        @keyframes pulseMic { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        #loadingOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:3000; justify-content:center; align-items:center; flex-direction:column; }
+        .spinner { border: 8px solid #f3f3f3; border-top: 8px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="loadingOverlay"><div class="spinner"></div><h2 style="color: var(--primary);" id="loadTxt">กำลังเชื่อมต่อระบบ...</h2></div>
+    <!-- 🌟 Popup อเนกประสงค์แบบใหม่ -->
+    <div id="customPopup" class="modal">
+        <div class="modal-content">
+            <button onclick="document.getElementById('customPopup').style.display='none'" style="position:absolute; top:10px; right:15px; background:transparent; border:none; font-size:24px; cursor:pointer; color:#ccc;">✖</button>
+            <div id="popupIcon" style="font-size: 50px; margin-bottom: 10px;">✨</div>
+            <h2 id="popupTitle" style="margin-top: 0; color: var(--primary);">Title</h2>
+            <p id="popupText" style="color: #555; margin-bottom: 20px; font-size: 16px;">Message</p>
+            <input type="text" id="popupInput" style="display:none; width: 90%; margin: 0 auto 20px auto; padding: 10px; border-radius: 8px; border: 2px solid #ccc; font-family: 'Sarabun';">
+            <div id="popupButtons" style="display: flex; gap: 10px; justify-content: center;">
+                <button id="popupBtnOk" class="btn btn-primary" style="flex: 1;">ตกลง</button>
+                <button id="popupBtnCancel" class="btn btn-secondary" style="flex: 1; display: none;">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- 🌟 Popup ข่าวสารอัปเดตเกม -->
+    <div id="newsModal" class="modal" style="z-index: 1500;">
+        <div class="modal-content" style="max-width: 500px;">
+            <button onclick="document.getElementById('newsModal').style.display='none'" style="position:absolute; top:10px; right:15px; background:transparent; border:none; font-size:24px; cursor:pointer; color:#ccc;">✖</button>
+            <h2 style="color: #ff9800; margin-top: 0;">📢 ประกาศอัปเดตระบบใหม่!</h2>
+            <div style="text-align: left; background: #fff8e1; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <ul style="padding-left: 20px; color: #555; margin: 0; line-height: 1.6;">
+                    <li><b>🏆 กระดานผู้นำ (Leaderboard):</b> ไต่อันดับแข่งกับเพื่อนๆ แยกชั้นเรียนได้แล้ว</li>
+                    <li><b>🎒 กระเป๋าไอเทมใหม่:</b> เก็บกล่องสุ่ม ไอเทมบัฟ กดใช้ตอนไหนก็ได้</li>
+                    <li><b>📜 บอร์ดภารกิจ:</b> โชว์รางวัลชัดเจน ดาวความยาก และโบนัสกล่องสุ่ม</li>
+                    <li><b>⚙️ ระบบโปรไฟล์:</b> เปลี่ยนกรอบรูป เปลี่ยนชื่อ โชว์เพื่อนๆ บนกระดานได้เลย</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="document.getElementById('newsModal').style.display='none'">รับทราบ ลุยเลย!</button>
+        </div>
+    </div>
+
+    <div id="loadingOverlay"><div class="spinner"></div><h2 style="color: var(--primary);" id="loadTxt">กำลังเชื่อมต่อ...</h2></div>
+
+    <!-- หน้า Login -->
     <div id="loginPage" class="page active">
         <div class="login-box">
             <h1 style="color: var(--primary);">🌟 อัศวินนักอ่าน</h1><p>โรงเรียนบ้านหนองโสน</p>
@@ -102,25 +139,26 @@
         </div>
     </div>
 
+    <!-- หน้าสร้างตัวละคร -->
     <div id="creationPage" class="page">
         <div class="login-box">
             <h1 style="color: var(--primary);">🎨 สร้างตัวละครอัศวินของคุณ</h1>
             <input type="text" id="newUserName" placeholder="ตั้งชื่อเล่น (เช่น น้องพอใจ)" style="margin-bottom: 20px;"><br>
-            <div id="creationAvatars"></div>
+            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;" id="creationAvatars"></div>
             <div id="avatarPreview" class="avatar-creation frame-none"></div>
             <br><button class="btn btn-primary" onclick="saveNewUser()" style="width: 100%; max-width: 300px;">🚀 บันทึกตัวละคร</button>
         </div>
     </div>
 
+    <!-- หน้าหลักเกม -->
     <div id="mainPage" class="page">
-        <button onclick="refreshData()" class="btn" style="background:#e0f7fa; color:var(--primary); width:100%; margin-bottom:10px;">🔄 อัปเดตกระดานภารกิจ</button>
+        <button onclick="refreshData()" class="btn" style="background: linear-gradient(135deg, #e0f7fa, #b2ebf2); color: var(--primary); width: 100%; margin-bottom: 20px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 131, 143, 0.15); border: 2px solid #80deea; transition: all 0.3s ease;">🔄 อัปเดตข้อมูลล่าสุด</button>
 
         <div class="header">
             <div style="display: flex; gap: 15px; align-items: center;">
                 <div id="headerAvatarContainer" class="avatar-header"></div>
                 <div class="level-container">
-                    <!-- 🌟 กู้คืนชื่อที่เผลอลบทิ้งไป เพื่อป้องกันระบบพัง -->
-                    <div id="headerName" style="font-size: 18px; font-weight: bold; margin-bottom: 2px; color: white;">ชื่อ</div>
+                    <div id="headerName" style="font-size: 18px; font-weight: bold; margin-bottom: 2px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">ชื่อ</div>
                     <div class="lvl-text"><span id="headerLvlNum">Lv.1</span> <span id="headerRankName" style="color: #ffe0b2;">-</span></div>
                     <div class="exp-bar-bg">
                         <div id="headerExpFill" class="exp-bar-fill"></div>
@@ -136,24 +174,30 @@
         </div>
 
         <div class="nav-tabs">
-            <div class="tab active" onclick="switchTab('qTab')">📜 ภารกิจ</div>
-            <div class="tab" onclick="switchTab('sTab')">🎁 ร้านค้า</div>
-            <div class="tab" onclick="switchTab('wTab')">👗 ตู้เสื้อผ้า/จัดฉาก</div>
-            <div class="tab" onclick="switchTab('cTab')">🎟️ เติมคูปอง</div>
+            <div class="tab active" onclick="switchTab('qTab', this)">📜 ภารกิจ</div>
+            <div class="tab" onclick="switchTab('sTab', this)">🎁 ร้านค้า</div>
+            <div class="tab" onclick="switchTab('wTab', this)">👗 ตู้เสื้อผ้า</div>
+            <div class="tab" onclick="switchTab('lTab', this)">🏆 จัดอันดับ</div>
+            <div class="tab" onclick="switchTab('iTab', this)">🎒 กระเป๋า</div>
+            <div class="tab" onclick="switchTab('pTab', this)">⚙️ โปรไฟล์</div>
         </div>
 
+        <!-- แท็บเควส (อัปเกรดความสวยงามและการ์ดเควส) -->
         <div id="qTab" class="tab-content active"><div class="grid" id="qBox"></div></div>
         
+        <!-- แท็บร้านค้า -->
         <div id="sTab" class="tab-content" style="display: none;">
             <div class="shop-nav">
                 <div class="shop-tab active" onclick="filterShop('all', this)">หมวดหมู่ทั้งหมด</div>
-                <div class="shop-tab" onclick="filterShop('costume', this)">👕 ชุด/ตัวละคร</div>
+                <div class="shop-tab" onclick="filterShop('costume', this)">👕 ชุด/ตัวละคร/กรอบ</div>
+                <div class="shop-tab" onclick="filterShop('box', this)">📦 กล่องสุ่มไอเทม</div>
                 <div class="shop-tab" onclick="filterShop('buff', this)">🔥 ไอเทมบัฟพิเศษ</div>
-                <div class="shop-tab" onclick="filterShop('real', this)">🎁 ของรางวัลจริง</div>
+		<div class="shop-tab" onclick="filterShop('real', this)">🎁 ของรางวัลจริง</div>
             </div>
             <div class="grid" id="shopGridBox"></div>
         </div>
 
+        <!-- แท็บตู้เสื้อผ้า -->
         <div id="wTab" class="tab-content" style="display: none;">
             <div style="background: white; padding: 20px; border-radius: 15px; text-align: center;">
                 <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px;">
@@ -162,67 +206,148 @@
                 </div>
                 <div id="wardrobeAvatarContainer" class="avatar-wardrobe frame-none"></div>
                 <div id="savePosSection" style="margin-bottom: 20px;">
-                    <button class="btn" style="background:#4caf50; color:white; width:100%; max-width: 300px;" onclick="savePositions()">💾 บันทึกตำแหน่งไอเทมและตัวละคร</button>
+                    <button class="btn" style="background:#4caf50; color:white; width:100%; max-width: 300px;" onclick="savePositions()">💾 บันทึกตำแหน่งไอเทมและฉาก</button>
                 </div>
                 <div id="inventorySection" style="display:none;">
-                    <p style="color: #777; margin-bottom:10px;">คลิกที่ไอเทมด้านล่างเพื่อสวมใส่ (คลิกตัวละครเพื่อตั้งเป็นเพื่อนในฉาก)</p>
                     <div class="grid" id="inventoryBox" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));"></div>
                 </div>
             </div>
         </div>
-        
-        <div id="cTab" class="tab-content" style="display: none;">
-            <div class="login-box" style="margin-top:20px; border:2px dashed var(--primary);">
-                <h2 style="color:var(--primary);">🎟️ กล่องเติมรหัสโค้ดคูปองรางวัล</h2>
-                <p>ใส่โค้ดรับเหรียญ Coins พิเศษจากกิจกรรมของคุณครูได้จากตรงนี้เลย!</p>
-                <input type="text" id="couponInputCode" placeholder="พิมพ์รหัสโค้ดตรงนี้"><br>
-                <button class="btn btn-secondary" onclick="claimCouponCode()" style="width:100%; max-width:300px; margin-top:10px;">🚀 ตรวจสอบและรับเหรียญ</button>
+
+        <!-- แท็บกระดานผู้นำ -->
+        <div id="lTab" class="tab-content" style="display: none;">
+            <div style="background: white; padding: 20px; border-radius: 15px; text-align: center;">
+                <h3 style="color:#00838f; font-size: 24px; margin-bottom: 5px;">🏆 Hall of Fame</h3>
+                <p style="color:#777; font-size:14px; margin-top: 0; margin-bottom: 20px;">อัศวินนักอ่านที่แข็งแกร่งที่สุด 100 อันดับ!</p>
+                
+                <!-- ตัวกรองระดับชั้น -->
+                <div style="margin-bottom: 20px;">
+                    <select id="lbClassFilter" onchange="renderLeaderboard()" style="padding: 10px; width: 100%; max-width: 300px; border-radius: 10px; border: 2px solid var(--primary); font-family: 'Sarabun';">
+                        <option value="all">🏆 ดูอันดับรวมทุกระดับชั้น</option>
+                    </select>
+                </div>
+
+                <div id="leaderboardBox"></div>
+            </div>
+        </div>
+
+        <!-- แท็บกระเป๋าไอเทม -->
+        <div id="iTab" class="tab-content" style="display: none;">
+            <div style="background: white; padding: 20px; border-radius: 15px;">
+                <h3 style="color:#00838f;">🎒 กระเป๋าของใช้งาน</h3>
+                <p style="color:#777; font-size:14px;">กล่องสุ่ม, บัฟคะแนน และไอเทมอื่นๆ จะเก็บไว้ที่นี่ กดเปิดเมื่อต้องการได้เลย!</p>
+                <div class="grid" id="consumableBox"></div>
+            </div>
+        </div>
+
+        <!-- แท็บโปรไฟล์และคูปอง -->
+        <div id="pTab" class="tab-content" style="display: none;">
+            <div style="background: white; padding: 20px; border-radius: 15px; text-align:center;">
+                
+                <div style="background:#fff8e1; padding:15px; border-radius:10px; border:2px dashed #ffc107; margin-bottom:20px;">
+                    <h4 style="color:#ff9800; margin-top:0;">🎟️ เติมรหัสคูปอง</h4>
+                    <input type="text" id="couponInputCode" placeholder="พิมพ์รหัสโค้ด" style="width:70%; max-width:200px; padding:10px; margin-bottom:0;">
+                    <button class="btn btn-secondary" onclick="claimCouponCode()" style="width:auto; padding:10px 15px;">รับรางวัล</button>
+                </div>
+
+                <h3 style="color:#00838f;">ตั้งค่ารูปโปรไฟล์</h3>
+                <div class="prof-select-grid" id="profPicGrid"></div>
+                
+                <h3 style="color:#00838f; margin-top:20px;">เลือกกรอบรูป (Frame)</h3>
+                <div class="prof-select-grid" id="profFrameGrid"></div>
+
+                <div style="margin-top:20px; text-align:left;">
+                    <label>ชื่อตัวละครของคุณ:</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="eName" style="flex:1; background:#e0e0e0; margin-bottom:0;" readonly>
+                        <button class="btn" id="btnRename" style="background:#ccc; width:auto; padding:10px 20px; font-size:14px;" onclick="useRenameItem()">✏️ แก้ไขชื่อ</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveProfile()" style="width: 100%; margin-top:20px;">💾 บันทึกการตั้งค่าโปรไฟล์</button>
+                <button class="btn" style="background: #ff5722; color: white; width: 100%; margin-top:10px;" onclick="logout()">🚪 ออกจากระบบ</button>
             </div>
         </div>
 
     </div>
 
-    <div id="gameModal" class="modal"><div class="modal-content"><h2 id="gTitle" style="color: var(--primary); margin-top: 0;">ภารกิจ</h2><div id="gProgress" style="font-weight:bold; color:#777; margin-bottom:10px;"></div><div id="gText" class="reading-text"></div><button id="micBtn" class="mic-btn" onclick="toggleMic()">🎤 กดเริ่มฟัง (ครั้งเดียว)</button><div id="gStatus" style="font-size: 20px; margin: 15px 0; color: #555; min-height: 60px;">พร้อมแล้วกดปุ่มไมค์ได้เลย!</div><button class="btn btn-secondary" onclick="closeGame()" style="width: 100%; max-width: 300px;">❌ ปิดหน้าต่าง</button></div></div>
+    <!-- หน้าต่างอ่านหนังสือ -->
+    <div id="gameModal" class="modal" style="z-index: 2500;"><div class="modal-content" style="max-width: 600px;"><h2 id="gTitle" style="color: var(--primary); margin-top: 0;">ภารกิจ</h2><div id="gProgress" style="font-weight:bold; color:#777; margin-bottom:10px;"></div><div id="gText" class="reading-text"></div><button id="micBtn" class="mic-btn" style="margin-top:20px;" onclick="toggleMic()">🎤 กดเริ่มฟัง</button><div id="gStatus" style="font-size: 20px; margin: 15px 0; color: #555; min-height: 60px;">พร้อมแล้วกดปุ่มไมค์ได้เลย!</div><button class="btn btn-secondary" onclick="closeGame()" style="width: 100%; max-width: 300px;">❌ ปิดหน้าต่าง</button></div></div>
 
     <script>
-        // ==========================================
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_AXPr47G1pKIcB09sX4F0EXyeZQmL_VVrYW0YhEYCHvPT9UuZLae0ZSfG8AS9PNtW1w/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz05jgZVbRe-A50UHGn2xCFlXaT6ms7aswl8CKVXf4RLSmEn4IRADsgsCcYTmnZbGZagg/exec";
         
-        const CHAR_MAP = {
-            "B1": "./images/boy1.png",
-            "B2": "./images/boy2.png",
-            "G1": "./images/girl1.png",
-            "G2": "./images/girl2.png"
-        };
+        const DEFAULT_PROFILES = ["./images/profile1.png", "./images/profile2.png", "./images/profile3.png", "./images/profile4.png", "./images/profile5.png"];
+        const CHAR_MAP = { "B1": "./images/boy1.png", "B2": "./images/boy2.png", "G1": "./images/girl1.png", "G2": "./images/girl2.png" };
         const BASE_CHARACTERS = Object.values(CHAR_MAP);
 
-        let allQ = [], allS = [], allU = [], allR = [], allClasses = [], allSettings = [];
-        let curU = { id: "", name: "", avatar: BASE_CHARACTERS[0], avatarId: "B1", frame: "frame-none", points: 0, coins: 0, className: "", completedQuests: [], inventory: [], equipped: {pos:{char:null,bg:null,partner:null}}, activeBuff: "" };
+        let allQ = [], allS = [], allU = [], allR = [], allClasses = [], allSettings = [], allGacha = [];
+        let curU = { id: "", name: "", avatar: BASE_CHARACTERS[0], avatarId: "B1", frame: "frame-none", points: 0, coins: 0, className: "", completedQuests: [], inventory: [], equipped: {pos:{char:null,bg:null,partner:null}, profilePic: DEFAULT_PROFILES[0], frameItem: ""}, activeBuff: "" };
         let tempCreationAvatar = BASE_CHARACTERS[0]; let isWardrobeMoveMode = true; 
         
         window.onload = () => { renderCharacterOptions('creationAvatars'); loadData(); };
 
-        function renderCharacterOptions(containerId) {
-            const container = document.getElementById(containerId); container.innerHTML = "";
-            Object.keys(CHAR_MAP).forEach((key, index) => {
-                let charUrl = CHAR_MAP[key];
-                container.innerHTML += `<div class="select-item ${index===0?'selected':''}" onclick="selCreation('${charUrl}', this)"> <img src="${charUrl}"> </div>`;
+        // 🌟 ฟังก์ชัน Popup อเนกประสงค์
+        function showPopup(title, text, icon="✨", isConfirm=false, onOk=null, onCancel=null, isPrompt=false) {
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupText').innerHTML = text; 
+            document.getElementById('popupIcon').innerText = icon;
+            document.getElementById('customPopup').style.display = 'flex';
+            
+            let btnOk = document.getElementById('popupBtnOk');
+            let btnCancel = document.getElementById('popupBtnCancel');
+            let inputEl = document.getElementById('popupInput');
+            
+            let newBtnOk = btnOk.cloneNode(true); btnOk.parentNode.replaceChild(newBtnOk, btnOk);
+            let newBtnCancel = btnCancel.cloneNode(true); btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
+            
+            if(isPrompt) { inputEl.style.display = 'block'; inputEl.value = ''; } else { inputEl.style.display = 'none'; }
+            
+            if(isConfirm || isPrompt) {
+                newBtnCancel.style.display = 'block';
+                newBtnOk.onclick = () => { document.getElementById('customPopup').style.display = 'none'; if(onOk) onOk(isPrompt ? inputEl.value : null); };
+                newBtnCancel.onclick = () => { document.getElementById('customPopup').style.display = 'none'; if(onCancel) onCancel(); };
+            } else {
+                newBtnCancel.style.display = 'none';
+                newBtnOk.onclick = () => { document.getElementById('customPopup').style.display = 'none'; if(onOk) onOk(); };
+            }
+        }
+
+        function logout() {
+            showPopup("ออกจากระบบ", "คุณต้องการออกจากระบบใช่หรือไม่?", "🚪", true, () => {
+                curU = { id: "", name: "", avatar: BASE_CHARACTERS[0], avatarId: "B1", points: 0, coins: 0, className: "", completedQuests: [], inventory: [], equipped: {pos:{}, profilePic: DEFAULT_PROFILES[0], frameItem: ""}, activeBuff: "" };
+                document.getElementById('mainPage').classList.remove('active');
+                document.getElementById('loginPage').classList.add('active');
+                document.getElementById('loginId').value = "";
             });
         }
 
-        function getCharIdFromUrl(url) {
-            for(let key in CHAR_MAP) { if(CHAR_MAP[key] === url) return key; }
-            return "all";
-        }
+        
+function renderCharacterOptions(containerId) {
+    const container = document.getElementById(containerId); container.innerHTML = "";
+    Object.keys(CHAR_MAP).forEach((key, index) => {
+        let charUrl = CHAR_MAP[key];
+        // บังคับขนาดภาพให้พอดีกับกล่อง 80x80
+        container.innerHTML += `<div class="select-item ${index===0?'selected':''}" style="width:80px; height:80px; flex-shrink:0;" onclick="selCreation('${charUrl}', this)"> <img src="${charUrl}" style="max-width:100%; max-height:100%; object-fit:contain; display:block; margin:auto;"> </div>`;
+    });
+}
+
+        function getCharIdFromUrl(url) { let safeUrl = String(url || ""); for(let key in CHAR_MAP) { if(CHAR_MAP[key] === safeUrl) return key; } return "all"; }
 
         async function loadData() {
-            sl("กำลังอัปเดตฐานข้อมูลระบบ...");
+            sl("กำลังอัปเดตข้อมูล...");
             try {
                 const res = await (await fetch(SCRIPT_URL)).json();
-                allQ = res.quests||[]; allS = res.shop||[]; allU = res.users||[]; allR = res.ranks||[]; allClasses = res.classes||[]; allSettings = res.settings||[];
+                allQ = res.quests||[]; allS = res.shop||[]; allU = res.users||[]; allR = res.ranks||[]; allClasses = res.classes||[]; allSettings = res.settings||[]; allGacha = res.gacha||[];
+                
                 let classOptions = `<option value="">-- เลือกระดับชั้น --</option>`;
-                allClasses.forEach(c => { classOptions += `<option value="${c.ClassName}">${c.ClassName}</option>`; });
+                let lbClassOptions = `<option value="all">🏆 ดูอันดับรวมทุกระดับชั้น</option>`;
+                allClasses.forEach(c => { 
+                    classOptions += `<option value="${c.ClassName}">${c.ClassName}</option>`; 
+                    lbClassOptions += `<option value="${c.ClassName}">🎖️ เฉพาะชั้น ${c.ClassName}</option>`;
+                });
                 document.getElementById('loginClass').innerHTML = classOptions;
+                document.getElementById('lbClassFilter').innerHTML = lbClassOptions;
+
                 hl(); if(curU.id !== "") refreshUI(); 
             } catch(e) { hl(); }
         }
@@ -230,81 +355,77 @@
 
         function login() {
             const id = document.getElementById('loginId').value.trim(); const selClass = document.getElementById('loginClass').value;
-            if(!id) return alert("กรุณาใส่รหัสนักเรียนครับ");
-            const u = allU.find(x => String(x.UserID).trim().toLowerCase() === id.toLowerCase());
+            if(!id) return showPopup("แจ้งเตือน", "กรุณาใส่รหัสนักเรียนครับ", "⚠️");
             
+            const u = allU.find(x => String(x.UserID || "").trim().toLowerCase() === id.toLowerCase());
             if(u) {
-                let finalClass = u.ClassName || selClass;
                 let eq = {}; try { eq = u.Equipped ? JSON.parse(u.Equipped) : {}; } catch(e){}
+                if(!eq.profilePic) eq.profilePic = DEFAULT_PROFILES[0];
+                if(!eq.frameItem) eq.frameItem = "";
+                if(!eq.pos) eq.pos = { char: null, bg: null, partner: null };
+
                 curU = { 
-                    id: u.UserID, 
-                    name: u.DisplayName||"น้อง"+u.UserID, 
-                    avatar: u.Avatar||BASE_CHARACTERS[0], 
-                    avatarId: getCharIdFromUrl(u.Avatar||BASE_CHARACTERS[0]), 
-                    frame: u.Frame||"frame-none", 
-                    points: Number(u.TotalPoints)||0, 
-                    coins: (u.Coins !== "" && u.Coins !== undefined) ? Number(u.Coins) : (Number(u.TotalPoints)||0), 
-                    className: finalClass, 
-                    completedQuests: u.CompletedQuests ? String(u.CompletedQuests).split(',').map(s=>s.trim()).filter(s=>s!=="") : [], 
+                    id: u.UserID, name: u.DisplayName||"น้อง"+u.UserID, avatar: u.Avatar||BASE_CHARACTERS[0], avatarId: getCharIdFromUrl(u.Avatar||BASE_CHARACTERS[0]), frame: u.Frame||"frame-none", 
+                    points: Number(u.TotalPoints)||0, coins: (u.Coins !== "" && u.Coins !== undefined) ? Number(u.Coins) : (Number(u.TotalPoints)||0), 
+                    className: u.ClassName || selClass, completedQuests: u.CompletedQuests ? String(u.CompletedQuests).split(',').map(s=>s.trim()).filter(s=>s!=="") : [], 
                     inventory: u.Inventory ? String(u.Inventory).split(',').map(s=>s.trim()).filter(s=>s!=="") : [], 
-                    equipped: eq, 
-                    activeBuff: u.ActiveBuff || "" 
+                    equipped: eq, activeBuff: u.ActiveBuff || "" 
                 };
-                if(!curU.equipped.pos) curU.equipped.pos = { char: null, bg: null, partner: null };
                 document.getElementById('loginPage').classList.remove('active'); document.getElementById('mainPage').classList.add('active');
                 refreshUI(); syncDB("เข้าสู่ระบบ", "-");
+                document.getElementById('newsModal').style.display = 'flex'; // แสดงข่าวสาร
             } else { 
-                if(!selClass) return alert("คุณเป็นผู้เล่นใหม่! กรุณาเลือกระดับชั้นก่อนครับ");
+                if(!selClass) return showPopup("แจ้งเตือน", "คุณเป็นผู้เล่นใหม่! กรุณาเลือกระดับชั้นก่อนครับ", "⚠️");
                 curU.id = id; curU.className = selClass;
                 document.getElementById('loginPage').classList.remove('active'); document.getElementById('creationPage').classList.add('active');
                 buildAvatarHTML('avatarPreview', true);
             }
         }
 
-        function selCreation(avatarVal, el) {
-            tempCreationAvatar = avatarVal; buildAvatarHTML('avatarPreview', true);
-            const container = document.getElementById('creationAvatars');
-            Array.from(container.children).forEach(c => c.classList.remove('selected')); el.classList.add('selected');
-        }
+        function selCreation(avatarVal, el) { tempCreationAvatar = avatarVal; buildAvatarHTML('avatarPreview', true); Array.from(el.parentElement.children).forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
 
         async function saveNewUser() {
-            let typedName = document.getElementById('newUserName').value.trim();
-            if(!typedName) return alert("กรุณาตั้งชื่อเล่นของคุณก่อนเข้าเกมส์ครับ");
+            let typedName = document.getElementById('newUserName').value.trim(); if(!typedName) return showPopup("แจ้งเตือน", "กรุณาตั้งชื่อเล่นก่อนครับ", "✏️");
             curU.name = typedName; curU.avatar = tempCreationAvatar; curU.avatarId = getCharIdFromUrl(tempCreationAvatar); curU.frame = "frame-none";
+            curU.equipped.profilePic = DEFAULT_PROFILES[0]; curU.equipped.frameItem = "";
             document.getElementById('creationPage').classList.remove('active'); document.getElementById('mainPage').classList.add('active');
             refreshUI(); await syncDB("สร้างตัวละครใหม่", "ยินดีต้อนรับ!");
+            document.getElementById('newsModal').style.display = 'flex';
         }
 
         function getLevelDetails(totalPoints) {
             const bSetting = allSettings.find(s=>s.SettingKey==='LevelBaseExp'); const sSetting = allSettings.find(s=>s.SettingKey==='LevelIncrement'); const bnSetting = allSettings.find(s=>s.SettingKey==='Level5Bonus');
             let baseExp = bSetting ? Number(bSetting.SettingValue) : 100; let increment = sSetting ? Number(sSetting.SettingValue) : 30; let level5Bonus = bnSetting ? Number(bnSetting.SettingValue) : 20;
             let level = 1; let pointsLeft = totalPoints; let currentReq = baseExp;
-            while (true) {
-                let step = increment; if (level % 5 === 0) { step += level5Bonus; }
-                if (pointsLeft >= currentReq) { pointsLeft -= currentReq; level++; currentReq += step; } else { break; }
-            }
+            while (true) { let step = increment; if (level % 5 === 0) { step += level5Bonus; } if (pointsLeft >= currentReq) { pointsLeft -= currentReq; level++; currentReq += step; } else { break; } }
             return { level: level, currentExp: pointsLeft, maxExp: currentReq };
-        }
-
-        function getProfilePicPath(fullPath) {
-            let isImg = fullPath.startsWith('http') || fullPath.startsWith('./') || fullPath.includes('.png');
-            if(isImg && fullPath.includes('/')) { let parts = fullPath.split('/'); let filename = parts.pop(); return parts.join('/') + '/Profile_' + filename; }
-            return fullPath; 
         }
 
         function buildAvatarHTML(containerId, isCreation = false) {
             let container = document.getElementById(containerId); let html = "";
-            let charAvatar = isCreation ? tempCreationAvatar : curU.avatar;
+            let charAvatar = String(isCreation ? tempCreationAvatar : curU.avatar);
+            
+            // 🌟 เพิ่ม 5 บรรทัดนี้ เพื่อเช็คว่ามีชุดเซ็ตทับร่างเดิมไหม
+            if (!isCreation && curU.equipped['full_body']) {
+                let fbItem = allS.find(s => String(s.ItemID) === String(curU.equipped['full_body']));
+                if(fbItem && (fbItem.LayerImage || fbItem.Icon)) charAvatar = fbItem.LayerImage || fbItem.Icon;
+            }
+
             let isImg = charAvatar.startsWith('http') || charAvatar.startsWith('./') || charAvatar.includes('.png');
+            // ... (โค้ดที่เหลือปล่อยไว้เหมือนเดิมครับ) ...
 
             if(containerId === 'headerAvatarContainer') {
-                if(isImg) { container.innerHTML = `<img src="${getProfilePicPath(charAvatar)}" onerror="this.style.display='none'">`; }
-                else { container.innerHTML = `<div style="font-size: 50px;">${charAvatar}</div>`; }
-                container.className = `avatar-header ${curU.frame}`; return;
+                let pic = curU.equipped.profilePic || DEFAULT_PROFILES[0];
+                html = `<img src="${pic}" class="prof-img" onerror="this.style.display='none'">`;
+                if(curU.equipped.frameItem) {
+                    let fItem = allS.find(s => String(s.ItemID) === String(curU.equipped.frameItem));
+                    if(fItem && fItem.Icon) html += `<img src="${fItem.Icon}" class="frame-img" onerror="this.style.display='none'">`;
+                }
+                container.innerHTML = html; container.className = `avatar-header ${curU.frame}`; return;
             }
 
             if(isCreation) {
-                if(isImg) { container.innerHTML = `<img src="${charAvatar}" class="breathe-anim" style="width:100%; height:100%; object-fit:contain; position:absolute; bottom:0;" onerror="this.style.display='none'">`; }
+                if(isImg) { container.innerHTML = `<img src="${charAvatar}" class="breathe-anim" style="max-width:100%; max-height:100%; object-fit:contain; position:absolute; top:0; bottom:0; left:0; right:0; margin:auto;" onerror="this.style.display='none'">`; }
                 else { container.innerHTML = `<div class="breathe-anim" style="position:absolute; bottom:10px; font-size:120px; display:flex; justify-content:center; width:100%;">${charAvatar}</div>`; }
                 return;
             }
@@ -319,7 +440,6 @@
             }
             if(isWardrobe && !isWardrobeMoveMode) { charTop = "5%"; charLeft = "calc(50% - 125px)"; bgTop = "0px"; bgLeft = "0px"; pTop = "5%"; pLeft = "calc(25% - 125px)"; }
 
-            // 🌟 วาด Background และซ่อนรูปรั่วด้วย onerror
             if(curU.equipped['bg']) {
                 const bgItem = allS.find(s => String(s.ItemID) === String(curU.equipped['bg']));
                 if(bgItem && (bgItem.LayerImage || bgItem.Icon)) {
@@ -333,7 +453,6 @@
             
             let animClass = isWardrobeMoveMode ? '' : 'breathe-anim'; 
             
-            // 🌟 วาด Partner
             if(curU.equipped['partner']) {
                 const partnerItem = allS.find(s => String(s.ItemID) === String(curU.equipped['partner']));
                 if(partnerItem && (partnerItem.LayerImage || partnerItem.Icon)) {
@@ -345,7 +464,6 @@
                 }
             }
 
-            // 🌟 วาด ร่างหลัก
             let charDragClass = (isWardrobe && isWardrobeMoveMode) ? 'draggable char-group' : 'char-group';
             html += `<div class="${charDragClass}" id="drag-char" style="top:${charTop}; left:${charLeft}; z-index:2;">`;
             if(isImg) { html += `<img src="${charAvatar}" class="base-avatar-img ${animClass}" onerror="this.style.display='none'">`; } 
@@ -372,16 +490,13 @@
         }
 
         function setWardrobeMode(mode) {
-            isWardrobeMoveMode = (mode === 'move');
-            let wardContainer = document.getElementById('wardrobeAvatarContainer');
+            isWardrobeMoveMode = (mode === 'move'); let wardContainer = document.getElementById('wardrobeAvatarContainer');
             if(isWardrobeMoveMode) {
                 document.getElementById('btnMoveMode').className = "btn btn-primary"; document.getElementById('btnEditMode').className = "btn"; document.getElementById('btnEditMode').style = "background:#e0e0e0; color:#333;";
-                document.getElementById('inventorySection').style.display = 'none'; document.getElementById('savePosSection').style.display = 'block'; 
-                wardContainer.classList.remove('edit-mode');
+                document.getElementById('inventorySection').style.display = 'none'; document.getElementById('savePosSection').style.display = 'block'; wardContainer.classList.remove('edit-mode');
             } else {
                 document.getElementById('btnEditMode').className = "btn btn-primary"; document.getElementById('btnMoveMode').className = "btn"; document.getElementById('btnMoveMode').style = "background:#e0e0e0; color:#333;";
-                document.getElementById('inventorySection').style.display = 'block'; document.getElementById('savePosSection').style.display = 'none'; 
-                wardContainer.classList.add('edit-mode');
+                document.getElementById('inventorySection').style.display = 'block'; document.getElementById('savePosSection').style.display = 'none'; wardContainer.classList.add('edit-mode');
             }
             buildAvatarHTML('wardrobeAvatarContainer');
         }
@@ -392,7 +507,7 @@
             curU.equipped.pos.char = charEl ? { top: charEl.style.top, left: charEl.style.left } : null;
             curU.equipped.pos.bg = bgEl ? { top: bgEl.style.top, left: bgEl.style.left } : null;
             curU.equipped.pos.partner = partnerEl ? { top: partnerEl.style.top, left: partnerEl.style.left } : null;
-            syncDB("บันทึกตำแหน่งจัดฉาก", "อัปเดตพิกัดเรียบร้อย"); alert("💾 บันทึกตำแหน่งฉากสำเร็จ!");
+            syncDB("บันทึกฉาก", "อัปเดตพิกัดเรียบร้อย"); showPopup("สำเร็จ", "💾 บันทึกตำแหน่งไอเทมและฉากสำเร็จ!", "✅");
         }
 
         function makeDraggable(elmnt, container) {
@@ -417,35 +532,94 @@
         function filterShop(type, btnEl) {
             document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active')); if(btnEl) btnEl.classList.add('active');
             const shopGrid = document.getElementById('shopGridBox'); shopGrid.innerHTML = "";
-            let newestItems = [...allS].filter(s => s.ItemID.startsWith('S')).sort((a,b) => b.ItemID.localeCompare(a.ItemID)).slice(0, 5).map(s => s.ItemID);
-
+            
             allS.forEach(s => {
+                let itemId = String(s.ItemID || "").trim(); if(itemId === "") return;
                 let comp = String(s.CompatibleChars || "all").trim().toUpperCase(); 
                 if(comp !== "ALL" && comp !== "" && !comp.includes(curU.avatarId)) return;
                 
-                if(type === 'costume' && (s.ItemType !== 'costume' && s.ItemType !== 'avatar' && s.ItemType !== 'rename')) return;
-                if(type === 'buff' && !s.ItemType.startsWith('buff')) return;
-                if(type === 'real' && s.ItemType !== 'real') return;
-                if(type !== 'all' && type !== 'costume' && type !== 'buff' && type !== 'real' && s.ItemType !== type) return;
+                let sType = String(s.ItemType || "").trim().toLowerCase();
+                if(type === 'costume' && (sType !== 'costume' && sType !== 'avatar' && sType !== 'frame')) return;
+                if(type === 'box' && sType !== 'box') return;
+                if(type === 'buff' && !sType.startsWith('buff')) return;
+                                 if(type === 'real' && sType !== 'real') return; // 🌟 เพิ่มบรรทัดนี้
+                if(type !== 'all' && type !== 'costume' && type !== 'buff' && type !== 'box' && type !== 'real' && sType !== type) return; // 🌟 เติม type !== 'real' เข้าไปในวงเล็บ
                 
-                let isOwned = curU.inventory.includes(String(s.ItemID)); let btnHtml = "";
-                let newBadgeHtml = newestItems.includes(s.ItemID) ? `<div class="new-badge">🆕 NEW</div>` : "";
+                let isOwned = curU.inventory.includes(itemId); let btnHtml = "";
+                if(isOwned && (sType === 'costume' || sType === 'avatar' || sType === 'frame')) { btnHtml = `<button class="btn btn-disabled" style="width:100%;">มีชิ้นนี้แล้ว</button>`; } 
+                else { btnHtml = `<button class="btn btn-secondary" style="width:100%;" onclick="buy('${itemId}',${s.PointsRequired},'${s.ItemName}','${sType}')">ซื้อ (${s.PointsRequired} Coins)</button>`; }
                 
-                if(isOwned && (s.ItemType === 'costume' || s.ItemType === 'avatar')) { btnHtml = `<button class="btn btn-disabled" style="width:100%;">มีชิ้นนี้แล้ว</button>`; } 
-                else { btnHtml = `<button class="btn btn-secondary" style="width:100%;" onclick="buy('${s.ItemID}',${s.PointsRequired},'${s.ItemName}','${s.ItemType}')">ซื้อ (${s.PointsRequired} เหรียญ)</button>`; }
-                
-                let imgHtml = s.Icon.startsWith("http") || s.Icon.startsWith("./") || s.Icon.includes(".png") 
-                    ? `<img src="${s.Icon}" style="width:80px;height:80px;object-fit:contain;margin:10px;" onerror="this.style.display='none'">` 
-                    : `<div style="font-size:60px;margin:10px;">${s.Icon}</div>`;
-                
-                shopGrid.innerHTML += `<div class="card">${newBadgeHtml}${imgHtml}<h3 style="margin-bottom:15px; font-size:16px;">${s.ItemName}</h3>${btnHtml}</div>`;
+                let iconSrc = String(s.Icon || "");
+                let imgHtml = iconSrc.startsWith("http") || iconSrc.startsWith("./") || iconSrc.includes(".png") ? `<img src="${iconSrc}" style="width:80px;height:80px;object-fit:contain;margin:10px;" onerror="this.style.display='none'">` : `<div style="font-size:60px;margin:10px;">${iconSrc}</div>`;
+                shopGrid.innerHTML += `<div class="card">${imgHtml}<h3 style="margin-bottom:15px; font-size:16px;">${s.ItemName}</h3>${btnHtml}</div>`;
             });
         }
 
+        // 🌟 ฟังก์ชันเรนเดอร์กระดานผู้นำโดยเฉพาะ
+        function renderLeaderboard() {
+            const lbBox = document.getElementById('leaderboardBox');
+            if (!lbBox) return;
+            
+            let filterEl = document.getElementById('lbClassFilter');
+            let filter = filterEl ? filterEl.value : "all";
+            
+            let filteredUsers = [...allU].filter(u => String(u.UserID || "").trim() !== "");
+            if(filter !== "all") {
+                filteredUsers = filteredUsers.filter(u => String(u.ClassName || "").trim() === filter.trim());
+            }
+            
+            let sortedUsers = filteredUsers.sort((a, b) => (Number(b.TotalPoints) || 0) - (Number(a.TotalPoints) || 0)).slice(0, 100);
+            
+            let lbHtml = "";
+            sortedUsers.forEach((u, index) => {
+                let rank = index + 1; let rankDisplay = rank; let cardClass = "";
+                if(rank === 1) { rankDisplay = "🥇"; cardClass = "top1"; } else if(rank === 2) { rankDisplay = "🥈"; cardClass = "top2"; } else if(rank === 3) { rankDisplay = "🥉"; cardClass = "top3"; }
+                if (String(u.UserID) === String(curU.id)) cardClass += " me";
+
+                let eq = {}; try { eq = u.Equipped ? JSON.parse(u.Equipped) : {}; } catch(e){}
+                let baseAva = String(u.Avatar || BASE_CHARACTERS[0]);
+                let miniAvaHtml = `<div class="mini-avatar-container">`;
+                if (baseAva.startsWith('http') || baseAva.startsWith('./') || baseAva.includes('.png')) { miniAvaHtml += `<img src="${baseAva}" class="mini-avatar-img" onerror="this.style.display='none'">`; } 
+                else { miniAvaHtml += `<div style="font-size:40px; text-align:center; margin-top:10px;">${baseAva}</div>`; }
+                
+                const layers = ['shoes', 'body_dress', 'body_pants', 'body_shirt', 'face', 'head', 'handheld']; let zi = 2;
+                layers.forEach(l => {
+                    if(eq[l]) {
+                        const itemData = allS.find(s => String(s.ItemID) === String(eq[l]));
+                        if(itemData) {
+                            let srcFile = String(itemData.LayerImage || itemData.Icon || "");
+                            if(srcFile.startsWith('http') || srcFile.startsWith('./') || srcFile.includes('.png')) { miniAvaHtml += `<img src="${srcFile}" class="mini-layer" style="z-index:${zi};" onerror="this.style.display='none'">`; }
+                        }
+                    } zi++;
+                });
+                miniAvaHtml += `</div>`;
+
+                let rName = "-"; let uPts = Number(u.TotalPoints) || 0;
+                if(allR.length > 0) { rName = allR[0].RankName; allR.forEach(r => { if(uPts >= Number(r.MinPoints)) rName = r.RankName; }); }
+
+                lbHtml += `
+                <div class="lb-card ${cardClass.trim()}">
+                    <div class="lb-rank">${rankDisplay}</div>
+                    ${miniAvaHtml}
+                    <div class="lb-info">
+                        <div class="lb-name">${u.DisplayName || "นักเรียน"}</div>
+                        <div class="lb-rankname">ยศ: ${rName}</div>
+                    </div>
+                    <div class="lb-stats">
+                        <div class="lb-score">${uPts} Exp</div>
+                        <div class="lb-coins">🪙 ${Number(u.Coins)||0} Coins</div>
+                    </div>
+                </div>`;
+            });
+            if(lbHtml === "") lbHtml = "<p style='color:#777;'>ยังไม่มีข้อมูลผู้เล่นในระบบ</p>";
+            lbBox.innerHTML = lbHtml;
+        }
+
+        // 🌟 อัปเกรดระบบเพื่อความเสถียรป้องกัน JS Crash
         function refreshUI() {
             if (!curU.id) return; 
             
-            document.getElementById('headerName').innerText = curU.name + (curU.className ? ` (${curU.className})` : ""); 
+            document.getElementById('headerName').innerText = curU.name + (curU.className ? ` (${curU.className})` : "");
             document.getElementById('headerPoints').innerText = curU.points; document.getElementById('headerCoins').innerText = curU.coins; 
             
             const lvlDetails = getLevelDetails(curU.points);
@@ -457,27 +631,27 @@
             if(allR.length > 0) {
                 let rName = allR[0].RankName; let rIcon = allR[0].RankIcon || "⭐";
                 allR.forEach(r => { if(curU.points >= Number(r.MinPoints)) { rName = r.RankName; rIcon = r.RankIcon; } });
-                let rIconStr = String(rIcon);
-                let rIconHtml = rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIconStr.includes('.png') 
-                    ? `<img src="${rIconStr}" style="width:16px; height:16px; vertical-align:middle;" onerror="this.style.display='none'">` 
-                    : rIconStr;
+                let rIconStr = String(rIcon).trim(); 
+let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIconStr.includes('.png')) ? `<img src="${rIconStr}" style="width:15px; height:15px; vertical-align:middle; margin-right:5px; object-fit:contain;">` : rIconStr;
                 document.getElementById('headerRankName').innerHTML = `${rIconHtml} ${rName}`;
             }
 
             let buffHtml = ""; let currentBuffs = String(curU.activeBuff || "");
-            if(currentBuffs.includes('buff_exp')) buffHtml += `<div style="background:#ff3d00; color:white; font-size:12px; padding:3px 10px; border-radius:10px; margin-top:5px; text-align:center; animation:pulseMic 1s infinite;">🔥 EXP x2 ทำงานอยู่!</div>`;
-            if(currentBuffs.includes('buff_coins')) buffHtml += `<div style="background:#ffb300; color:white; font-size:12px; padding:3px 10px; border-radius:10px; margin-top:5px; text-align:center; animation:pulseMic 1s infinite;">💰 Coins x2 ทำงานอยู่!</div>`;
-            if(currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) buffHtml += `<div style="background:#ff3d00; color:white; font-size:12px; padding:3px 10px; border-radius:10px; margin-top:5px; text-align:center; animation:pulseMic 1s infinite;">🔥 ALL x2 ทำงานอยู่!</div>`;
+            if(currentBuffs.includes('buff_exp')) buffHtml += `<div style="background:#ff3d00; color:white; font-size:12px; padding:3px 10px; border-radius:10px; margin-top:5px; text-align:center;">🔥 EXP x2 ทำงานอยู่!</div>`;
+            if(currentBuffs.includes('buff_coins')) buffHtml += `<div style="background:#ffb300; color:white; font-size:12px; padding:3px 10px; border-radius:10px; margin-top:5px; text-align:center;">💰 Coins x2 ทำงานอยู่!</div>`;
             document.getElementById('buffIndicator').innerHTML = buffHtml;
 
             buildAvatarHTML('headerAvatarContainer'); buildAvatarHTML('wardrobeAvatarContainer');
             
-            // 🌟 แก้บักเควสหาย: กรองค่าที่พัง/ว่างออกไปก่อนเช็ค
+            // 🌟 1. การ์ดภารกิจแบบใหม่บอกรายละเอียดจัดเต็ม
             const qb = document.getElementById('qBox');
             if (qb) {
                 qb.innerHTML = "";
                 let completedIds = curU.completedQuests.map(id => String(id).trim()).filter(id => id !== "");
-                let availQ = allQ.filter(q => q.QuestID && !completedIds.includes(String(q.QuestID).trim()));
+                let availQ = allQ.filter(q => {
+                    let qId = String(q.QuestID || "").trim();
+                    return qId !== "" && !completedIds.includes(qId);
+                });
                 
                 let filteredQ = availQ.filter(q => { 
                     let assigned = String(q.AssignedClasses || "").trim().toLowerCase(); 
@@ -486,86 +660,265 @@
                     return false;
                 });
                 
-                if(filteredQ.length === 0) {
-                    qb.innerHTML = "<p style='grid-column: 1 / -1; text-align:center; color:#777; margin-top:30px;'>🎉 ยังไม่มีภารกิจใหม่ในขณะนี้ หรือนักเรียนทำครบหมดแล้วครับ!</p>";
-                } else {
-                    filteredQ.forEach(q => {
-                        qb.innerHTML += `<div class="card"><div style="position:absolute;top:10px;right:-25px;background:#4caf50;color:white;padding:5px 30px;transform:rotate(45deg);font-size:12px;">+${q.RewardPoints} เหรียญ</div>
-                        <h3 style="color:var(--primary); margin-top:5px;">${q.Title}</h3><div style="color:#ff9800; margin:10px;">ความยาก: ${q.Difficulty}</div>
-                        <button class="btn btn-primary" style="width:100%;" onclick="openGame('${q.QuestID}')">รับภารกิจ</button></div>`;
-                    });
+                if(filteredQ.length === 0) { 
+                    qb.innerHTML = "<p style='grid-column: 1 / -1; text-align:center; color:#777; margin-top:30px;'>🎉 เย้! ไม่มีภารกิจค้างแล้ว หรือทำครบหมดแล้วครับ!</p>"; 
+                } 
+                else { 
+                    filteredQ.forEach(q => { 
+                    let typeName = q.Type === 'word' ? "หมวดคำศัพท์" : (q.Type === 'sentence' ? "หมวดประโยค" : "หมวดเรื่องสั้น");
+
+                    // 🌟 ระบบสีของดาวและระดับความยาก
+                    let starHtml = ""; let diffLevel = "";
+                    if(q.Difficulty === '⭐⭐⭐⭐⭐') {
+                        diffLevel = "ตำนาน";
+                        starHtml = `<span style="color: #00e5ff; text-shadow: 0 0 8px #00e5ff, 0 0 15px #00e5ff; font-size: 20px;">⭐⭐⭐⭐⭐</span>`;
+                    } else if(q.Difficulty === '⭐⭐⭐⭐') {
+                        diffLevel = "หายาก";
+                        starHtml = `<span style="color: #ff9800; font-size: 18px;">⭐⭐⭐⭐</span>`;
+                    } else {
+                        diffLevel = q.Difficulty === '⭐' ? "ง่าย" : (q.Difficulty === '⭐⭐' ? "ปานกลาง" : "ยาก");
+                        starHtml = `<span style="color: #ffd700; font-size: 18px;">${q.Difficulty}</span>`;
+                    }
+
+                    let extraMsg = "";
+                    let rwId = String(q.ItemRewardID || "").trim();
+                    if(rwId !== "") {
+                        let rwObj = allS.find(s => String(s.ItemID) === rwId);
+                        if(rwObj) extraMsg = `<div style="font-size: 14px; color: #8e24aa; margin-top: 10px; background: #f3e5f5; padding: 8px; border-radius: 5px;"><b>🎁 โบนัสพิเศษ:</b> ${rwObj.ItemName} x 1</div>`;
+                    }
+
+                    // 🌟 ดึงค่า Exp และ Coins ที่แยกด้วยลูกน้ำ (,)
+                    let rwData = String(q.RewardPoints).split(',');
+                    let qExp = rwData[0] || 0;
+                    let qCoins = rwData[1] !== undefined ? rwData[1] : qExp;
+
+                    qb.innerHTML += qb.innerHTML += `<div class="card" style="text-align: left; padding-top: 15px;">
+                            <div style="text-align: right; margin-bottom: 5px;">${starHtml}</div>
+                            <h3 style="color:var(--primary); margin: 0 0 10px 0; font-size: 18px; line-height: 1.4;">📜 ${q.Title}</h3>
+                            <div style="font-size: 14px; color: #555; margin-bottom: 5px;"><b>หมวดหมู่:</b> ${typeName}</div>
+                        <div style="font-size: 14px; color: #555; margin-bottom: 5px;"><b>หมวดหมู่:</b> ${typeName}</div>
+                        <div style="font-size: 14px; color: #555; margin-bottom: 5px;"><b>ความยาก:</b> ${diffLevel}</div>
+                        <div style="font-size: 14px; color: #555; margin-bottom: 5px;"><b>รางวัลที่จะได้รับ:</b></div>
+                        <div style="font-size: 14px; color: #333; margin-left: 10px;">🏆 ${qExp} Exp <br>💰 ${qCoins} Coins</div>
+                        ${extraMsg}
+                        <button class="btn btn-primary" style="width:100%; margin-top: 15px;" onclick="openGame('${q.QuestID}')">📥 รับภารกิจ</button>
+                    </div>`; 
+                }); 
                 }
             }
 
             filterShop('all', document.querySelector('.shop-tab'));
 
+            // 🌟 2. ตู้เสื้อผ้า (เฉพาะ costume, avatar, frame) ไม่ปนในกระเป๋า
             const invBox = document.getElementById('inventoryBox');
             if (invBox) {
                 invBox.innerHTML = "";
                 curU.inventory.forEach(itemId => {
                     const itemData = allS.find(s => String(s.ItemID) === String(itemId));
-                    if(itemData && (itemData.ItemType === 'costume' || itemData.ItemType === 'avatar')) { 
-                        let isEquipped = (curU.equipped[itemData.Layer] === itemId || curU.equipped['partner'] === itemId) ? "equipped" : "";
-                        let imgHtml = itemData.Icon.startsWith("http") || itemData.Icon.startsWith("./") || itemData.Icon.includes(".png")
-                            ? `<img src="${itemData.Icon}" style="width:60px;height:60px;object-fit:contain;" onerror="this.style.display='none'">`
-                            : `<div style="font-size:40px;">${itemData.Icon}</div>`;
-                            
-                        invBox.innerHTML += `<div class="inv-card ${isEquipped}" onclick="toggleEquip('${itemId}', '${itemData.Layer}', '${itemData.ItemType}')">${imgHtml}<div style="font-size:12px; margin-top:5px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${itemData.ItemName}</div></div>`;
+                    if(itemData) {
+                        let sType = String(itemData.ItemType).trim().toLowerCase();
+                        if(sType === 'costume' || sType === 'avatar') { 
+                            let layer = itemData.Layer || "";
+                            let isEquipped = (layer && curU.equipped[layer] === itemId || curU.equipped['partner'] === itemId) ? "equipped" : "";
+                            let iconSrc = String(itemData.Icon || "");
+                            let imgHtml = iconSrc.startsWith("http") || iconSrc.startsWith("./") || iconSrc.includes(".png") ? `<img src="${iconSrc}" style="width:60px;height:60px;object-fit:contain;" onerror="this.style.display='none'">` : `<div style="font-size:40px;">${iconSrc}</div>`;
+                            invBox.innerHTML += `<div class="inv-card ${isEquipped}" onclick="toggleEquip('${itemId}', '${layer}', '${itemData.ItemType}')">${imgHtml}<div style="font-size:12px; margin-top:5px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${itemData.ItemName}</div></div>`;
+                        }
                     }
                 });
             }
+
+            // 🌟 3. กระเป๋าไอเทมใช้งาน (กล่องสุ่ม, บัฟ, ใบเปลี่ยนชื่อ)
+            const cBox = document.getElementById('consumableBox');
+            if(cBox) {
+                cBox.innerHTML = "";
+                curU.inventory.forEach(itemId => {
+                    const itemData = allS.find(s => String(s.ItemID) === String(itemId));
+                    if(itemData) {
+                        let sType = String(itemData.ItemType).trim().toLowerCase();
+                        if(sType === 'buff' || sType === 'rename' || sType === 'box') {
+                            let actionBtn = "";
+                            if(sType === 'rename') { actionBtn = `<button class="btn btn-secondary" style="width:100%; margin-top:10px;" onclick="switchTab('pTab')">ไปโปรไฟล์</button>`; } 
+                            else if(sType === 'box') { actionBtn = `<button class="btn" style="background:#8e24aa; color:white; width:100%; margin-top:10px;" onclick="useItem('${itemData.ItemID}', '${itemData.ItemType}', '${itemData.ItemName}')">🎁 เปิดกล่อง</button>`; }
+                            else { actionBtn = `<button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="useItem('${itemData.ItemID}', '${itemData.ItemType}', '${itemData.ItemName}')">ใช้งาน</button>`; }
+                            
+                            let iconSrc = String(itemData.Icon || "");
+                            let imgHtml = iconSrc.startsWith("http") || iconSrc.startsWith("./") || iconSrc.includes(".png") ? `<img src="${iconSrc}" style="width:60px;height:60px;object-fit:contain;" onerror="this.style.display='none'">` : `<div style="font-size:40px;">${iconSrc}</div>`;
+                            cBox.innerHTML += `<div class="card">${imgHtml}<h4 style="margin:5px 0;">${itemData.ItemName}</h4>${actionBtn}</div>`;
+                        }
+                    }
+                });
+                if(cBox.innerHTML === "") cBox.innerHTML = "<p style='grid-column: 1 / -1; color:#777;'>กระเป๋าว่างเปล่า ไปหาซื้อของใช้งานหรือกล่องสุ่มได้ที่ร้านค้านะ!</p>";
+            }
+
+            // 🌟 4. หน้าโปรไฟล์ 
+            let eNameEl = document.getElementById('eName');
+            if(eNameEl) eNameEl.value = curU.name;
+            
+            let btnRename = document.getElementById('btnRename');
+            if(btnRename) {
+                let hasRename = curU.inventory.some(id => { let s=allS.find(x=>String(x.ItemID)===String(id)); return s && String(s.ItemType).trim().toLowerCase() === 'rename'; });
+                if(hasRename) { btnRename.style.background = "#ff9800"; btnRename.innerText = "✏️ เปลี่ยนชื่อ"; btnRename.disabled = false; } 
+                else { btnRename.style.background = "#ccc"; btnRename.innerText = "🔒 ต้องมีใบเปลี่ยนชื่อ"; btnRename.disabled = true; }
+            }
+
+            let profHtml = "";
+            DEFAULT_PROFILES.forEach(p => {
+                let sel = (curU.equipped.profilePic === p) ? "selected" : "";
+                profHtml += `<div class="prof-item ${sel}" onclick="selProfPic('${p}')"><img src="${p}" onerror="this.style.display='none'"></div>`;
+            });
+            let pGrid = document.getElementById('profPicGrid'); if(pGrid) pGrid.innerHTML = profHtml;
+
+            let frameHtml = `<div class="prof-item ${curU.equipped.frameItem===''?'selected':''}" onclick="selFrame('')" style="display:flex; justify-content:center; align-items:center; font-size:20px;">❌</div>`;
+            curU.inventory.forEach(itemId => {
+                const s = allS.find(x => String(x.ItemID) === String(itemId));
+                if(s && String(s.ItemType).trim().toLowerCase() === 'frame') {
+                    let sel = (curU.equipped.frameItem === s.ItemID) ? "selected" : "";
+                    frameHtml += `<div class="prof-item ${sel}" onclick="selFrame('${s.ItemID}')"><img src="${s.Icon}" onerror="this.style.display='none'"></div>`;
+                }
+            });
+            let fGrid = document.getElementById('profFrameGrid'); if(fGrid) fGrid.innerHTML = frameHtml;
+
+            // 🌟 5. รีเฟรช Leaderboard
+            renderLeaderboard();
         }
+
+        function selProfPic(url) { curU.equipped.profilePic = url; refreshUI(); }
+        function selFrame(id) { curU.equipped.frameItem = id; refreshUI(); }
+        
+        async function useRenameItem() {
+            let renameItemId = curU.inventory.find(id => { let s=allS.find(x=>String(x.ItemID)===String(id)); return s && String(s.ItemType).trim().toLowerCase() === 'rename'; });
+            if(!renameItemId) return;
+            
+            showPopup("เปลี่ยนชื่อ", "กรุณาพิมพ์ชื่อใหม่ที่คุณต้องการ:", "✏️", true, async (newName) => {
+                if(newName && newName.trim() !== "") {
+                    curU.name = newName.trim();
+                    let idx = curU.inventory.indexOf(renameItemId); if(idx > -1) curU.inventory.splice(idx, 1);
+                    refreshUI(); await syncDB("ใช้ใบเปลี่ยนชื่อ", newName); 
+                    showPopup("สำเร็จ!", "✅ เปลี่ยนชื่อสำเร็จ!", "✅");
+                }
+            }, null, true);
+        }
+        function saveProfile() { syncDB("บันทึกโปรไฟล์", "-"); showPopup("สำเร็จ", "💾 บันทึกการตั้งค่าโปรไฟล์สำเร็จ!", "✅"); }
 
         async function claimCouponCode() {
             let code = document.getElementById('couponInputCode').value.trim();
-            if(!code) return alert("กรุณาพิมพ์รหัสโค้ดคูปองก่อนกดปุ่มตรวจสอบครับ");
-            sl("กำลังส่งโค้ดไปตรวจสอบหลังบ้าน...");
+            if(!code) return showPopup("แจ้งเตือน", "กรุณาพิมพ์รหัสโค้ดคูปองก่อนครับ", "⚠️");
+            sl("กำลังส่งโค้ดไปตรวจสอบ...");
             try {
                 let res = await (await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: "claimCoupon", userId: curU.id, code: code }) })).json();
                 hl();
-                if(res.status === "success") { alert(`🎉 ยินดีด้วยครับ! โค้ดถูกต้อง ได้รับรางวัลเพิ่มจำนวน +${res.reward} เหรียญช็อปปิ้ง (Coins) เรียบร้อยแล้วครับ!`); document.getElementById('couponInputCode').value = ""; await loadData(); } else { alert(res.message); }
-            } catch(e) { hl(); alert("ระบบเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง"); }
+                if(res.status === "success") { 
+                    curU.coins += Number(res.reward); // 🌟 เด้งเหรียญทันทีไม่ต้องรีเฟรช
+                    document.getElementById('couponInputCode').value = ""; 
+                    refreshUI(); 
+                    showPopup("ยินดีด้วย!", `🎉 โค้ดถูกต้อง ได้รับ +${res.reward} Coins เรียบร้อย!`, "✅");
+                } else { showPopup("ผิดพลาด", res.message, "❌"); }
+            } catch(e) { hl(); showPopup("ขัดข้อง", "ระบบเชื่อมต่อขัดข้อง กรุณาลองใหม่อีกครั้ง", "❌"); }
         }
 
-        function toggleEquip(itemId, layer, itemType) { 
+       function toggleEquip(itemId, layer, itemType) { 
             if(itemType === 'avatar') {
-                let choice = confirm("คุณต้องการใช้งานตัวละครนี้อย่างไร?\n\nกด [OK/ตกลง] = เปลี่ยนเป็นร่างหลักของฉัน\nกด [Cancel/ยกเลิก] = วางตั้งโชว์เป็นตัวละครคู่หูในฉาก");
-                if (choice) {
+                showPopup("เลือกรูปแบบใช้งาน", "ต้องการตั้งตัวละครนี้เป็นอะไร?<br><br><b>[ตกลง]</b> เปลี่ยนเป็นร่างหลักของฉัน<br><b>[ยกเลิก]</b> วางตั้งโชว์เป็นคู่หู", "👥", true, () => {
                     const avatarItem = allS.find(s => String(s.ItemID) === String(itemId));
                     curU.avatar = avatarItem.LayerImage || avatarItem.Icon; 
                     curU.avatarId = getCharIdFromUrl(curU.avatar);
-                    alert("✨ เปลี่ยนร่างหลักสำเร็จ!");
-                    refreshUI(); syncDB("เปลี่ยนร่างหลัก", "-"); return;
-                } else { layer = 'partner'; }
+                    refreshUI(); syncDB("เปลี่ยนร่างหลัก", "-"); showPopup("สำเร็จ!", "✨ เปลี่ยนร่างหลักสำเร็จ!", "✅");
+                }, () => {
+                    if (curU.equipped['partner'] === itemId) delete curU.equipped['partner']; else curU.equipped['partner'] = itemId;
+                    refreshUI(); syncDB("จัดฉาก", "-");
+                });
+                return;
             }
-            if (curU.equipped[layer] === itemId) { delete curU.equipped[layer]; } else { curU.equipped[layer] = itemId; } 
+            
+            let safeLayer = layer || "";
+            if (safeLayer) { 
+                if (curU.equipped[safeLayer] === itemId) { 
+                    delete curU.equipped[safeLayer]; 
+                } else { 
+                    curU.equipped[safeLayer] = itemId; 
+                    
+                    // 🌟 พระเอกของเรา: สั่งถอดชุดสลับกันตรงนี้
+                    if (safeLayer === 'body_shirt' || safeLayer === 'body_pants' || safeLayer === 'body_dress') {
+                        delete curU.equipped['full_body']; // ถ้าใส่เสื้อปกติ ให้ถอดชุดเซ็ตเต็มตัวออก
+                    } else if (safeLayer === 'full_body') {
+                        delete curU.equipped['body_shirt']; // ถ้าใส่ชุดเซ็ต ให้ถอดเสื้อและกางเกงปกติออก
+                        delete curU.equipped['body_pants'];
+                        delete curU.equipped['body_dress'];
+                    }
+                } 
+            } 
             refreshUI(); syncDB("เปลี่ยนชุด/จัดฉาก", "-"); 
         }
 
         async function syncDB(act="", det="") { let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, coins: curU.coins, className: curU.className, completedQuests: curU.completedQuests, inventory: curU.inventory, equipped: curU.equipped, activeBuff: curU.activeBuff }; if(act) pay.logData = { action: act, detail: det }; try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(pay) }); } catch(e){} }
         
-        async function buy(id, cost, name, itemType) {
+       async function buy(id, cost, name, itemType) {
             if(curU.coins >= cost) { 
+                showPopup("ยืนยันการซื้อ", `ใช้ ${cost} Coins แลก ${name}?`, "🛒", true, async () => {
+                    curU.coins -= cost; 
+                    
+                    // 🌟 เช็คว่าถ้าเป็น "ของรางวัลจริง" ไม่ต้องเก็บลงกระเป๋า แต่ให้ส่งคิวไปหาครูเลย
+                    if (itemType === 'real') {
+                        refreshUI(); 
+                        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: "requestRedeem", redeemId: "R"+Date.now(), userId: curU.id, userName: curU.name, itemName: name, cost: cost}) });
+                        await syncDB("แลกของรางวัลจริง", name); 
+                        showPopup("สำเร็จ!", "✅ ส่งคำขอแลกรางวัลสำเร็จ! รอคุณครูเรียกรับของได้เลยครับ", "🎁");
+                    } else {
+                        // ถ้าเป็นไอเทมในเกมทั่วไป เก็บลงกระเป๋าตามปกติ
+                        curU.inventory.push(id); 
+                        refreshUI(); await syncDB("ซื้อสินค้า", name); 
+                        showPopup("สำเร็จ!", "✅ ซื้อสำเร็จ! เข้าไปสวมใส่หรือใช้งานได้ที่กระเป๋าเลยครับ", "✅");
+                    }
+                });
+            } else showPopup("เสียใจด้วย", "เหรียญ Coins ของคุณไม่พอจ้า!", "😢"); 
+        }
+
+        async function useItem(itemId, itemType, itemName) {
+            showPopup("ยืนยันการใช้งาน", `ต้องการกดใช้งาน ${itemName} หรือไม่?`, "🎒", true, async () => {
+                let idx = curU.inventory.indexOf(itemId); if(idx > -1) curU.inventory.splice(idx, 1);
+                
                 if(itemType.startsWith('buff')) {
                     let currentBuffs = String(curU.activeBuff || "");
-                    if(currentBuffs.includes(itemType)) return alert("❌ คุณมีบัฟชนิดนี้เปิดใช้งานอยู่แล้วครับ ไปทำภารกิจก่อนนะ!");
-                    if(confirm(`ใช้ ${cost} Coins ซื้อ ${name}?`)) { 
-                        curU.coins -= cost; curU.activeBuff = currentBuffs ? currentBuffs + "," + itemType : itemType;
-                        refreshUI(); await syncDB("ซื้อไอเทมบัฟ", name); alert("🔥 ซื้อบัฟสำเร็จ! ภารกิจต่อไปจะได้โบนัสตัวคูณทันที"); 
-                    }
-                    return;
+                    if(!currentBuffs.includes(itemType)) { curU.activeBuff = currentBuffs ? currentBuffs + "," + itemType : itemType; }
+                    refreshUI(); await syncDB("กดใช้บัฟ", itemName); 
+                    showPopup("สำเร็จ!", `🔥 ใช้งาน ${itemName} สำเร็จ! ภารกิจต่อไปรับโบนัสทันที`, "✅");
                 }
-                if(confirm(`ใช้ ${cost} Coins แลก ${name}?`)) { 
-                    curU.coins -= cost; 
-                    if (itemType === 'costume' || itemType === 'avatar') { curU.inventory.push(id); refreshUI(); await syncDB("ซื้อสินค้า", name); alert("✅ ซื้อสำเร็จ! เข้าไปสวมใส่ได้ที่ตู้เสื้อผ้าเลยครับ");
-                    } else if (itemType === 'rename') {
-                        let newName = prompt("กรุณาพิมพ์ชื่อตัวละครใหม่:"); if(newName) { curU.name = newName.trim(); refreshUI(); await syncDB("เปลี่ยนชื่อ", newName); } else curU.coins += cost;
+                else if(itemType === 'box') {
+                    let possibleDrops = allGacha.filter(g => String(g.BoxLevel) === String(itemId));
+                    if(possibleDrops.length === 0) {
+                        curU.inventory.push(itemId); refreshUI(); 
+                        return showPopup("ขออภัย", "❌ กล่องนี้ยังไม่ได้ถูกตั้งค่าไอเทมด้านใน (ส่งกล่องคืนเข้ากระเป๋า)", "⚠️");
                     }
-                } 
-            } else alert("เหรียญช็อปปิ้งไม่พอจ้า!"); 
+                    
+                    let roll = Math.random() * 100; let accumulatedRate = 0; let wonItemId = null;
+                    for(let i=0; i<possibleDrops.length; i++) {
+                        accumulatedRate += Number(possibleDrops[i].DropRatePercent);
+                        if(roll <= accumulatedRate) { wonItemId = possibleDrops[i].ItemID; break; }
+                    }
+                    
+                    if(wonItemId) {
+                        let wonItemObj = allS.find(s => String(s.ItemID) === String(wonItemId));
+                        if(wonItemObj) {
+                            curU.inventory.push(wonItemId); 
+                            refreshUI(); await syncDB("เปิดกล่องสุ่ม", `ได้ ${wonItemObj.ItemName}`);
+                            showPopup("🎉 ยินดีด้วย!!", `เปิดได้:\n\n✨ [ ${wonItemObj.ItemName} ] ✨\n\nเก็บเข้ากระเป๋า/ตู้เสื้อผ้าแล้ว!`, "🎁");
+                        } else { showPopup("เอ๊ะ?", "❌ ไอเทมที่สุ่มได้ไม่มีในร้านค้า", "⚠️"); }
+                    } else {
+                        refreshUI(); await syncDB("เปิดกล่องสุ่ม", "เกลือ (ไม่ได้ไอเทม)"); 
+                        showPopup("ว้าา...", `💨 เกลือ!! เปิดแล้วว่างเปล่า ไม่มีอะไรเลย...`, "💨");
+                    }
+                }
+            });
         }
         
-        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none'); document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.getElementById(id).style.display='block'; event.currentTarget.classList.add('active'); if(id === 'wTab') setWardrobeMode('move'); }
+        function switchTab(id, el) { 
+            document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none'); 
+            document.querySelectorAll('.nav-tabs .tab').forEach(t=>t.classList.remove('active')); 
+            document.getElementById(id).style.display='block'; 
+            if(el) el.classList.add('active'); 
+            if(id === 'wTab') setWardrobeMode('move'); 
+        }
         function sl(txt) { document.getElementById('loadTxt').innerText=txt; document.getElementById('loadingOverlay').style.display='flex'; }
         function hl() { document.getElementById('loadingOverlay').style.display='none'; }
         
@@ -583,7 +936,7 @@
             document.getElementById('gText').innerHTML = `<span style="color: #4caf50;">${greenPart}</span><span style="color: #333;">${blackPart}</span>`;
         }
         function closeGame() { document.getElementById('gameModal').style.display = "none"; keepListening = false; if(isRec) rec.stop(); }
-        function toggleMic() { if(!rec) return alert("เบราว์เซอร์ไม่รองรับ"); if(isRec) { keepListening = false; rec.stop(); } else { keepListening = true; isRec = true; try { rec.start(); } catch(e){} document.getElementById('micBtn').innerText="🔴 ระบบกำลังฟังเสียง..."; } }
+        function toggleMic() { if(!rec) return showPopup("แจ้งเตือน", "เบราว์เซอร์นี้ไม่รองรับระบบเสียง", "⚠️"); if(isRec) { keepListening = false; rec.stop(); } else { keepListening = true; isRec = true; try { rec.start(); } catch(e){} document.getElementById('micBtn').innerText="🔴 ระบบกำลังฟังเสียง..."; } }
         
         function checkAns(spk) {
             updateQuestView(spk); const tgt = qSet[qIdx]; const cSpk = spk.replace(/\s/g, ''); const cTgt = tgt.replace(/\s/g, '');
@@ -591,16 +944,31 @@
                 qIdx++;
                 if(qIdx >= qSet.length) {
                     keepListening = false; rec.stop(); 
-                    let basePts = Number(aQ.RewardPoints); let expMult = 1, coinMult = 1;
-                    let currentBuffs = String(curU.activeBuff || "");
-                    if(currentBuffs.includes('buff_exp') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) expMult = 2;
-                    if(currentBuffs.includes('buff_coins') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) coinMult = 2;
+
+
+// 🌟 ดึงค่ามาแยกคำนวณ Exp กับ Coins ออกจากกัน
+                let rwData = String(aQ.RewardPoints).split(',');
+                let baseExp = Number(rwData[0]) || 0;
+                let baseCoin = rwData[1] !== undefined ? Number(rwData[1]) : baseExp;
+
+                let expMult = 1, coinMult = 1;
+                let currentBuffs = String(curU.activeBuff || "");
+                if(currentBuffs.includes('buff_exp') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) expMult = 2;
+                if(currentBuffs.includes('buff_coins') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) coinMult = 2;
+
+                let ptsEarned = baseExp * expMult; let coinsEarned = baseCoin * coinMult; curU.activeBuff = "";
                     
-                    let ptsEarned = basePts * expMult; let coinsEarned = basePts * coinMult; curU.activeBuff = ""; 
-                    if(aQ.ItemRewardID) { curU.inventory.push(aQ.ItemRewardID); }
-                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมากอ่านถูกต้อง!<br>ได้รับ ${ptsEarned} Exp เลื่อนยศ และ ${coinsEarned} เหรียญช็อปปิ้ง</span>`;
+                    let extraMsg = "";
+                    if(aQ.ItemRewardID && String(aQ.ItemRewardID).trim() !== "") {
+                        let rwId = String(aQ.ItemRewardID).trim();
+                        curU.inventory.push(rwId);
+                        let rwObj = allS.find(s => String(s.ItemID) === rwId);
+                        if(rwObj) extraMsg = `<br><br><span style="color:#8e24aa; font-size:16px;">🎁 โบนัสพิเศษ: ได้รับ [${rwObj.ItemName}] ถูกเก็บเข้ากระเป๋าแล้ว!</span>`;
+                    }
+
+                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมากอ่านถูกต้อง!<br>ได้รับ ${ptsEarned} Exp และ ${coinsEarned} Coins${extraMsg}</span>`;
                     curU.points += ptsEarned; curU.coins += coinsEarned; curU.completedQuests.push(String(aQ.QuestID));
-                    refreshUI(); syncDB("ภารกิจสำเร็จ", aQ.Title); setTimeout(() => { closeGame(); }, 2500);
+                    refreshUI(); syncDB("ภารกิจสำเร็จ", aQ.Title); setTimeout(() => { closeGame(); }, 3500);
                 } else { document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เก่งมาก! คำต่อไปเลยครับ</span>`; updateQuestView(""); }
             } else { document.getElementById('gStatus').innerHTML = `<span style="color:#ef6c00; font-size:16px;">ระบบได้ยิน: <b>"${spk}"</b><br>ลองพยายามอ่านต่อคำที่เหลือนะ!</span>`; }
         }
