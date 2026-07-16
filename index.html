@@ -6,6 +6,7 @@
     <title>อัศวินนักอ่าน - โรงเรียนบ้านหนองโสน</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
     <style>
+
         :root { --primary: #00838f; --secondary: #ff9800; --bg: #f0f2f5; }
         body { font-family: 'Sarabun'; background: var(--bg); margin: 0; padding: 0; color: #333; overflow-x: hidden; }
         img { border: none; outline: none; }
@@ -92,9 +93,18 @@
         #loadingOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:3000; justify-content:center; align-items:center; flex-direction:column; }
         .spinner { border: 8px solid #f3f3f3; border-top: 8px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+/* ดัน Popup แจ้งเตือนให้อยู่หน้าสุดเสมอ */
+ .swal2-container {
+    z-index: 99999 !important;
     </style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
+<!-- 🌟 ระบบเสียงพื้นหลังและเอฟเฟกต์ -->
+    <audio id="bgMusic" loop></audio>
+    <audio id="sfxClick" src="./music/click.mp3" preload="auto"></audio>
+    <audio id="sfxBuy" src="./music/buy.mp3" preload="auto"></audio>
+    <audio id="sfxSuccess" src="./music/success.mp3" preload="auto"></audio>
     <!-- 🌟 Popup อเนกประสงค์แบบใหม่ -->
     <div id="customPopup" class="modal">
         <div class="modal-content">
@@ -255,7 +265,8 @@
                 
                 <h3 style="color:#00838f; margin-top:20px;">เลือกกรอบรูป (Frame)</h3>
                 <div class="prof-select-grid" id="profFrameGrid"></div>
-
+		<h3 style="color:#00838f; margin-top:20px;">🎵 เสียงเพลงพื้นหลัง (Melody)</h3>
+                <div class="prof-select-grid" id="profMelodyGrid"></div>
                 <div style="margin-top:20px; text-align:left;">
                     <label>ชื่อตัวละครของคุณ:</label>
                     <div style="display:flex; gap:10px; align-items:center;">
@@ -270,16 +281,38 @@
 
     </div>
 
-    <!-- หน้าต่างอ่านหนังสือ -->
-    <div id="gameModal" class="modal" style="z-index: 2500;"><div class="modal-content" style="max-width: 600px;"><h2 id="gTitle" style="color: var(--primary); margin-top: 0;">ภารกิจ</h2><div id="gProgress" style="font-weight:bold; color:#777; margin-bottom:10px;"></div><div id="gText" class="reading-text"></div><button id="micBtn" class="mic-btn" style="margin-top:20px;" onclick="toggleMic()">🎤 กดเริ่มฟัง</button><div id="gStatus" style="font-size: 20px; margin: 15px 0; color: #555; min-height: 60px;">พร้อมแล้วกดปุ่มไมค์ได้เลย!</div><button class="btn btn-secondary" onclick="closeGame()" style="width: 100%; max-width: 300px;">❌ ปิดหน้าต่าง</button></div></div>
+   <!-- หน้าต่างอ่านหนังสือ (เพิ่มปุ่มส่งคำตอบเรื่องสั้น) -->
+    <div id="gameModal" class="modal" style="z-index: 2500;">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 id="gTitle" style="color: var(--primary); margin-top: 0;">ภารกิจ</h2>
+            <div id="gProgress" style="font-weight:bold; color:#777; margin-bottom:10px;"></div>
+            <div id="gText" class="reading-text"></div>
+<div style="text-align: center; margin-bottom: 15px;">
+    <!-- โค้ดโจทย์เดิมอาจจะอยู่แถวๆ นี้ -->
+    <div id="gText" style="font-size: 30px; margin-bottom: 10px;"></div>
+    
+    <!-- 🌟 เพิ่มปุ่มลำโพงซ่อนไว้ตรงนี้ -->
+    <button id="speakerBtn" onclick="handleSpeakerBtn()" style="display:none; font-size:28px; background:none; border:none; cursor:pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔊</button>
+</div>
+            
+            <button id="micBtn" class="mic-btn" style="margin-top:20px;" onclick="toggleMic()">🎤 กดเริ่มฟัง</button>
+            <button id="finishStoryBtn" class="btn btn-primary" style="display:none; width: 100%; max-width: 300px; margin: 10px auto; background: #6a1b9a;" onclick="submitStory()">📩 ส่งคำตอบ (เรื่องสั้น)</button>
+            
+            <div id="gStatus" style="font-size: 20px; margin: 15px 0; color: #555; min-height: 60px;">พร้อมแล้วกดปุ่มไมค์ได้เลย!</div>
+            <button class="btn btn-secondary" onclick="closeGame()" style="width: 100%; max-width: 300px;">❌ ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+
+
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz05jgZVbRe-A50UHGn2xCFlXaT6ms7aswl8CKVXf4RLSmEn4IRADsgsCcYTmnZbGZagg/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJFbnGwIG6TgnWrGZpWrQmzHXU86-7xU_PC0uZD4v8mpsoe-QkauZOZ5FPYLWxkVxWsg/exec";
         
         const DEFAULT_PROFILES = ["./images/profile1.png", "./images/profile2.png", "./images/profile3.png", "./images/profile4.png", "./images/profile5.png"];
         const CHAR_MAP = { "B1": "./images/boy1.png", "B2": "./images/boy2.png", "G1": "./images/girl1.png", "G2": "./images/girl2.png" };
         const BASE_CHARACTERS = Object.values(CHAR_MAP);
-
+	let isSpeakerActive = false;
         let allQ = [], allS = [], allU = [], allR = [], allClasses = [], allSettings = [], allGacha = [];
         let curU = { id: "", name: "", avatar: BASE_CHARACTERS[0], avatarId: "B1", frame: "frame-none", points: 0, coins: 0, className: "", completedQuests: [], inventory: [], equipped: {pos:{char:null,bg:null,partner:null}, profilePic: DEFAULT_PROFILES[0], frameItem: ""}, activeBuff: "" };
         let tempCreationAvatar = BASE_CHARACTERS[0]; let isWardrobeMoveMode = true; 
@@ -665,7 +698,19 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
                 } 
                 else { 
                     filteredQ.forEach(q => { 
-                    let typeName = q.Type === 'word' ? "หมวดคำศัพท์" : (q.Type === 'sentence' ? "หมวดประโยค" : "หมวดเรื่องสั้น");
+               
+
+let t = q.Type;
+        let typeName = t === 'word_th' ? "คำศัพท์ (ไทย)" : 
+                       t === 'sentence_th' ? "ประโยค (ไทย)" : 
+                       t === 'story_th' ? "เรื่องสั้น (ไทย)" :
+			t==='consonant_th' ? "พยัญชนะ (ไทย)" :
+			t===  'vowel_th' ? "สระ (ไทย)" :
+			t===  'spelling_th' ? "อ่านสะกดคำ (ไทย)" :
+
+                        t === 'word_en' ? "คำศัพท์ (EN)" : 
+                       t === 'sentence_en' ? "ประโยค (EN)" : 
+                       t === 'consonant_en' ? "อักษรอังกฤษ (EN)" : "ภารกิจ";
 
                     // 🌟 ระบบสีของดาวและระดับความยาก
                     let starHtml = ""; let diffLevel = "";
@@ -781,6 +826,25 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
 
             // 🌟 5. รีเฟรช Leaderboard
             renderLeaderboard();
+// 🌟 เรนเดอร์เมนูเพลง (Melody)
+            let melodyHtml = `<div class="prof-item ${!curU.equipped.melody?'selected':''}" onclick="toggleEquip('', 'melody', 'melody')" style="width:auto; padding:0 15px; font-size:16px;">🔇 ปิดเพลง</div>`;
+            curU.inventory.forEach(itemId => {
+                const s = allS.find(x => String(x.ItemID) === String(itemId));
+                if(s && String(s.ItemType).trim().toLowerCase() === 'melody') {
+                    let sel = (curU.equipped.melody === s.ItemID) ? "selected" : "";
+                    melodyHtml += `<div class="prof-item ${sel}" onclick="toggleEquip('${s.ItemID}', 'melody', 'melody')" style="width:auto; padding:0 15px; font-size:16px;">${s.Icon} ${s.ItemName}</div>`;
+                }
+            });
+            let pMelodyGrid = document.getElementById('profMelodyGrid'); if(pMelodyGrid) pMelodyGrid.innerHTML = melodyHtml;
+
+            // 🌟 เล่นเพลงอัตโนมัติถ้าเปิดไว้
+            let audio = document.getElementById('bgMusic');
+            if (curU.equipped.melody) {
+                let mItem = allS.find(s => s.ItemID === curU.equipped.melody);
+                if (mItem && mItem.LayerImage && audio.src !== window.location.origin + mItem.LayerImage.substring(1)) {
+                    audio.src = mItem.LayerImage; audio.play().catch(e=>{});
+                }
+            } else { audio.pause(); audio.src = ""; }
         }
 
         function selProfPic(url) { curU.equipped.profilePic = url; refreshUI(); }
@@ -795,7 +859,7 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
                     curU.name = newName.trim();
                     let idx = curU.inventory.indexOf(renameItemId); if(idx > -1) curU.inventory.splice(idx, 1);
                     refreshUI(); await syncDB("ใช้ใบเปลี่ยนชื่อ", newName); 
-                    showPopup("สำเร็จ!", "✅ เปลี่ยนชื่อสำเร็จ!", "✅");
+                    showPopup("สำเร็จ!", "✅ เปลี่ยนชื่อสำเร็จ!", "✅"); 
                 }
             }, null, true);
         }
@@ -832,24 +896,25 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
             }
             
             let safeLayer = layer || "";
+            if (itemType === 'melody') safeLayer = 'melody';
+
             if (safeLayer) { 
                 if (curU.equipped[safeLayer] === itemId) { 
                     delete curU.equipped[safeLayer]; 
                 } else { 
                     curU.equipped[safeLayer] = itemId; 
-                    
-                    // 🌟 พระเอกของเรา: สั่งถอดชุดสลับกันตรงนี้
-                    if (safeLayer === 'body_shirt' || safeLayer === 'body_pants' || safeLayer === 'body_dress') {
-                        delete curU.equipped['full_body']; // ถ้าใส่เสื้อปกติ ให้ถอดชุดเซ็ตเต็มตัวออก
-                    } else if (safeLayer === 'full_body') {
-                        delete curU.equipped['body_shirt']; // ถ้าใส่ชุดเซ็ต ให้ถอดเสื้อและกางเกงปกติออก
-                        delete curU.equipped['body_pants'];
-                        delete curU.equipped['body_dress'];
-                    }
+                    if (safeLayer === 'body_shirt' || safeLayer === 'body_pants' || safeLayer === 'body_dress') { delete curU.equipped['full_body']; } 
+                    else if (safeLayer === 'full_body') { delete curU.equipped['body_shirt']; delete curU.equipped['body_pants']; delete curU.equipped['body_dress']; }
                 } 
             } 
-            refreshUI(); syncDB("เปลี่ยนชุด/จัดฉาก", "-"); 
-        }
+            refreshUI(); syncDB("เปลี่ยนชุด/เพลง", "-"); 
+
+            // 🌟 สั่งเล่นหรือหยุดเพลงทันทีที่กดเลือก
+            if(itemType === 'melody') {
+                let audio = document.getElementById('bgMusic');
+                if(curU.equipped.melody) { audio.play().catch(e=>{}); } 
+                else { audio.pause(); }
+            }}
 
         async function syncDB(act="", det="") { let pay = { action: "saveUser", id: curU.id, name: curU.name, avatar: curU.avatar, frame: curU.frame, points: curU.points, coins: curU.coins, className: curU.className, completedQuests: curU.completedQuests, inventory: curU.inventory, equipped: curU.equipped, activeBuff: curU.activeBuff }; if(act) pay.logData = { action: act, detail: det }; try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(pay) }); } catch(e){} }
         
@@ -868,7 +933,7 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
                         // ถ้าเป็นไอเทมในเกมทั่วไป เก็บลงกระเป๋าตามปกติ
                         curU.inventory.push(id); 
                         refreshUI(); await syncDB("ซื้อสินค้า", name); 
-                        showPopup("สำเร็จ!", "✅ ซื้อสำเร็จ! เข้าไปสวมใส่หรือใช้งานได้ที่กระเป๋าเลยครับ", "✅");
+                        showPopup("สำเร็จ!", "✅ ซื้อสำเร็จ! เข้าไปสวมใส่หรือใช้งานได้ที่กระเป๋าเลยครับ", "✅"); playSFX('sfxClick');
                     }
                 });
             } else showPopup("เสียใจด้วย", "เหรียญ Coins ของคุณไม่พอจ้า!", "😢"); 
@@ -877,13 +942,22 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
         async function useItem(itemId, itemType, itemName) {
             showPopup("ยืนยันการใช้งาน", `ต้องการกดใช้งาน ${itemName} หรือไม่?`, "🎒", true, async () => {
                 let idx = curU.inventory.indexOf(itemId); if(idx > -1) curU.inventory.splice(idx, 1);
-                
-                if(itemType.startsWith('buff')) {
+                 if (itemId === "ITEM_SPEAKER") {
+            Swal.fire({
+                icon: 'info',
+                title: 'ไอเทมเฉพาะกิจ',
+                text: 'สามารถใช้งานกับ เควสภาษาอังกฤษ ระดับ 4-5 ดาวเท่านั้น (ปุ่มจะปรากฏในหน้าทำภารกิจ)',
+                confirmButtonColor: '#00838f'
+            });
+            return; // หยุดการทำงาน ไม่ให้ไปต่อ
+        }
+               else if(itemType.startsWith('buff')) {
                     let currentBuffs = String(curU.activeBuff || "");
                     if(!currentBuffs.includes(itemType)) { curU.activeBuff = currentBuffs ? currentBuffs + "," + itemType : itemType; }
                     refreshUI(); await syncDB("กดใช้บัฟ", itemName); 
                     showPopup("สำเร็จ!", `🔥 ใช้งาน ${itemName} สำเร็จ! ภารกิจต่อไปรับโบนัสทันที`, "✅");
                 }
+		
                 else if(itemType === 'box') {
                     let possibleDrops = allGacha.filter(g => String(g.BoxLevel) === String(itemId));
                     if(possibleDrops.length === 0) {
@@ -922,55 +996,372 @@ let rIconHtml = (rIconStr.startsWith("http") || rIconStr.startsWith("./") || rIc
         function sl(txt) { document.getElementById('loadTxt').innerText=txt; document.getElementById('loadingOverlay').style.display='flex'; }
         function hl() { document.getElementById('loadingOverlay').style.display='none'; }
         
-        let aQ = null, qSet = [], qIdx = 0, isRec = false, keepListening = false;
+        let aQ = null, qSet = [], qIdx = 0, isRec = false, storyTranscript = "";
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const rec = SR ? new SR() : null;
-        if(rec) { rec.lang = 'th-TH'; rec.interimResults = false; rec.continuous = true; rec.onresult = function(e) { const lastResultIndex = e.results.length - 1; checkAns(e.results[lastResultIndex][0].transcript.trim()); }; rec.onend = function() { if(keepListening) { try { rec.start(); } catch(e){} } else { isRec = false; document.getElementById('micBtn').innerText="🎤 กดเริ่มฟัง"; } }; }
-        function openGame(id) { aQ = allQ.find(x => String(x.QuestID) === String(id)); qSet = String(aQ.Content).split('|').map(s=>s.trim()).filter(s=>s!==""); qIdx = 0; document.getElementById('gTitle').innerText = aQ.Title; updateQuestView(""); document.getElementById('gameModal').style.display = "flex"; keepListening = false; }
         
-        function updateQuestView(spokenText = "") {
+        if(rec) { 
+            rec.lang = 'th-TH'; 
+            rec.interimResults = false; 
+            rec.onresult = function(e) { 
+                const lastResultIndex = e.results.length - 1; 
+                let spk = e.results[lastResultIndex][0].transcript.trim();
+                
+                if(aQ.Type === 'story') {
+                    storyTranscript += spk + " ";
+                    document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">กำลังฟัง...<br><span style="font-size:16px;">( ${storyTranscript.substring(storyTranscript.length - 30)}... )</span></span>`;
+                } else {
+                    checkAns(spk); // ถ้าเป็นคำ/ประโยค ตรวจทันที
+                }
+            }; 
+            rec.onend = function() { 
+                isRec = false; 
+                document.getElementById('micBtn').innerText="🎤 กดเริ่มฟัง"; 
+                document.getElementById('micBtn').style.background = "#4caf50";
+            }; 
+        }
+// 🌟 เพิ่มบรรทัดนี้ไปแทนที่การเช็ค typeName เดิมในฟังก์ชัน refreshUI() (ประมาณบรรทัดที่ 466)
+        
+        
+        // 🌟 แทนที่ฟังก์ชัน openGame() เดิมด้วยอันนี้
+        function openGame(id) { 
+            aQ = allQ.find(x => String(x.QuestID) === String(id)); 
+            
+            // 🌟 1. ระบบสะกดคำ (แยกคำแสดงผล กับ คำอ่าน ด้วยเครื่องหมาย =)
+            qSet = String(aQ.Content).split('|').map(s => {
+                let parts = s.trim().split('=');
+                return { 
+                    display: parts[0].trim(), 
+                    expected: (parts.length > 1 ? parts[1] : parts[0]).trim() 
+                };
+            }).filter(q => q.display !== ""); 
+            
+            qIdx = 0; storyTranscript = "";
+            document.getElementById('gTitle').innerText = aQ.Title; 
+            
+            // รีเซ็ตหน้าจอ
+            document.getElementById('gStatus').innerHTML = "พร้อมแล้วกดปุ่มไมค์ได้เลย!";
+            document.getElementById('gProgress').innerText = `ข้อที่ 1 จาก ${qSet.length}`;
+            if(isRec) { rec.stop(); isRec = false; }
+
+            // 🌟 2. สั่งให้ไมค์ฟังภาษาตามที่ครูตั้งไว้ (เช็คจาก _en)
+            if (rec) {
+                rec.lang = aQ.Type.includes('_en') ? 'en-US' : 'th-TH'; 
+            }
+            
+            
+            // 🌟 3. เช็คเงื่อนไขแสดง "ปุ่มลำโพงตัวช่วย" (โชว์เมื่อเป็นภาษาอังกฤษ)
+            isSpeakerActive = false; 
+            let isEnglish = aQ.Type.includes('_en');
+            let spkBtn = document.getElementById('speakerBtn');
+            if (spkBtn) {
+                spkBtn.style.display = isEnglish ? "inline-block" : "none";
+            }
+
+            // 🌟 4. เช็คโหมดเรื่องสั้น (ใช้ .includes รองรับทั้ง story_th และ story_en)
+            if(aQ.Type.includes('story')) { 
+                if (rec) rec.continuous = true; 
+                document.getElementById('gText').innerHTML = `<span style="color:#333;">${qSet[0].display}</span>`;
+                document.getElementById('finishStoryBtn').style.display = "block";
+                document.getElementById('micBtn').innerText = "🎤 กดเริ่มอ่านเรื่อง";
+            } else {
+                if (rec) rec.continuous = false; 
+                updateQuestView(""); 
+                document.getElementById('finishStoryBtn').style.display = "none";
+            }
+            
+            // แสดงหน้าต่างภารกิจ
+            document.getElementById('gameModal').style.display = "flex"; 
+            let bgm = document.getElementById('bgMusic'); 
+            if(bgm) bgm.pause(); // ปิดเพลงพื้นหลังตอนอ่าน
+        }
+
+        function toggleMic() { 
+            if(!rec) return showPopup("แจ้งเตือน", "เบราว์เซอร์นี้ไม่รองรับระบบเสียง", "⚠️"); 
+            if(isRec) { rec.stop(); } 
+            else { 
+                isRec = true; 
+                try { rec.start(); } catch(e){} 
+                document.getElementById('micBtn').innerText="🔴 ระบบกำลังฟังเสียง..."; 
+                document.getElementById('micBtn').style.background = "#f44336";
+            } 
+        }
+
+       function updateQuestView(spokenText = "") {
             if(qSet.length > 1) document.getElementById('gProgress').innerText = `ข้อที่ ${qIdx+1} จาก ${qSet.length}`; else document.getElementById('gProgress').innerText = "";
-            let targetText = qSet[qIdx]; if(!spokenText) { document.getElementById('gText').innerHTML = `<span>${targetText}</span>`; return; }
+            let qObj = qSet[qIdx]; if(!qObj) return;
+            
+            // 🌟 ถ้ารูปแบบคำแสดงกับคำอ่านไม่เหมือนกัน (เช่น สะกดคำ) จะแสดงแค่คำศัพท์ ไม่ทำไฮไลท์ทีละตัวเพื่อป้องกันเด็กสับสน
+            if(qObj.display !== qObj.expected) {
+                document.getElementById('gText').innerHTML = `<span style="color: #333; font-size:45px;">${qObj.display}</span>`;
+                return;
+            }
+
+            let targetText = qObj.display; 
+            if(!spokenText) { document.getElementById('gText').innerHTML = `<span>${targetText}</span>`; return; }
+            
             let cleanTgt = targetText.replace(/\s/g, ''); let cleanSpk = spokenText.replace(/\s/g, ''); let matchedCount = 0;
             for(let i = 1; i <= targetText.length; i++) { let sub = targetText.substring(0, i).replace(/\s/g, ''); if(cleanSpk.includes(sub)) { matchedCount = i; } else { break; } }
             let greenPart = targetText.substring(0, matchedCount); let blackPart = targetText.substring(matchedCount);
             document.getElementById('gText').innerHTML = `<span style="color: #4caf50;">${greenPart}</span><span style="color: #333;">${blackPart}</span>`;
         }
-        function closeGame() { document.getElementById('gameModal').style.display = "none"; keepListening = false; if(isRec) rec.stop(); }
-        function toggleMic() { if(!rec) return showPopup("แจ้งเตือน", "เบราว์เซอร์นี้ไม่รองรับระบบเสียง", "⚠️"); if(isRec) { keepListening = false; rec.stop(); } else { keepListening = true; isRec = true; try { rec.start(); } catch(e){} document.getElementById('micBtn').innerText="🔴 ระบบกำลังฟังเสียง..."; } }
         
         function checkAns(spk) {
-            updateQuestView(spk); const tgt = qSet[qIdx]; const cSpk = spk.replace(/\s/g, ''); const cTgt = tgt.replace(/\s/g, '');
-            if(cSpk === cTgt || (aQ.Type === 'story' && cSpk.includes(cTgt.substring(0, Math.floor(cTgt.length/2))))) {
+            updateQuestView(spk); 
+            const tgt = qSet[qIdx].expected; // 🌟 ตรวจคำตอบกับ "คำอ่าน" ที่คาดหวัง ไม่ใช่คำที่แสดง
+            const cSpk = spk.replace(/\s/g, '').toLowerCase(); 
+            const cTgt = tgt.replace(/\s/g, '').toLowerCase();
+            if(cSpk === cTgt || cSpk.includes(cTgt)) {
                 qIdx++;
                 if(qIdx >= qSet.length) {
-                    keepListening = false; rec.stop(); 
+                    if(isRec) rec.stop();
+                    triggerQuestSuccess();
+                } else { 
+                    document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เก่งมาก! กดไมค์แล้วอ่านข้อต่อไปเลยครับ</span>`; 
+                    updateQuestView(""); 
+                }
+            } else { 
+                document.getElementById('gStatus').innerHTML = `<span style="color:#ef6c00; font-size:16px;">ระบบได้ยิน: <b>"${spk}"</b><br>ลองกดไมค์แล้วพยายามใหม่นะ!</span>`; 
+            }
+        }
 
+        function submitStory() {
+            if(isRec) { rec.stop(); isRec = false; }
+            if(storyTranscript.trim() === "") return document.getElementById('gStatus').innerHTML = `<span style="color:#ef6c00;">คุณยังไม่ได้อ่านเลย ลองกดไมค์ดูนะ!</span>`;
 
-// 🌟 ดึงค่ามาแยกคำนวณ Exp กับ Coins ออกจากกัน
-                let rwData = String(aQ.RewardPoints).split(',');
-                let baseExp = Number(rwData[0]) || 0;
-                let baseCoin = rwData[1] !== undefined ? Number(rwData[1]) : baseExp;
+            let tgtStr = qSet[0].expected; // 🌟 ตรวจกับ Expected
+            
+            // แปลงพิมพ์เล็กสำหรับตรวจเรื่องสั้น
+            let cleanSpk = storyTranscript.replace(/\s/g, '').toLowerCase();
+            let cleanTgt = tgtStr.replace(/\s/g, '').toLowerCase();
 
-                let expMult = 1, coinMult = 1;
-                let currentBuffs = String(curU.activeBuff || "");
-                if(currentBuffs.includes('buff_exp') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) expMult = 2;
-                if(currentBuffs.includes('buff_coins') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) coinMult = 2;
+            let matchCount = 0; let displayHtml = "";
+            let words = tgtStr.split(' '); 
+            
+            if(words.length > 1) {
+                words.forEach(w => {
+                    let cw = w.replace(/\s/g, '');
+                    if(cleanSpk.includes(cw)) { matchCount += cw.length; displayHtml += `<span style="color:#4caf50;">${w}</span> `; } 
+                    else { displayHtml += `<span style="color:#f44336; text-decoration: underline;">${w}</span> `; }
+                });
+            } else { 
+                for(let i=0; i<cleanTgt.length; i++) {
+                    if(cleanSpk.includes(cleanTgt[i])) { matchCount++; displayHtml += `<span style="color:#4caf50;">${tgtStr[i]}</span>`; }
+                    else { displayHtml += `<span style="color:#f44336; text-decoration: underline;">${tgtStr[i]}</span>`; }
+                }
+            }
 
-                let ptsEarned = baseExp * expMult; let coinsEarned = baseCoin * coinMult; curU.activeBuff = "";
-                    
-                    let extraMsg = "";
-                    if(aQ.ItemRewardID && String(aQ.ItemRewardID).trim() !== "") {
-                        let rwId = String(aQ.ItemRewardID).trim();
-                        curU.inventory.push(rwId);
-                        let rwObj = allS.find(s => String(s.ItemID) === rwId);
-                        if(rwObj) extraMsg = `<br><br><span style="color:#8e24aa; font-size:16px;">🎁 โบนัสพิเศษ: ได้รับ [${rwObj.ItemName}] ถูกเก็บเข้ากระเป๋าแล้ว!</span>`;
-                    }
+            let percent = Math.floor((matchCount / cleanTgt.length) * 100);
+            if(percent > 100) percent = 100;
 
-                    document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 เก่งมากอ่านถูกต้อง!<br>ได้รับ ${ptsEarned} Exp และ ${coinsEarned} Coins${extraMsg}</span>`;
-                    curU.points += ptsEarned; curU.coins += coinsEarned; curU.completedQuests.push(String(aQ.QuestID));
-                    refreshUI(); syncDB("ภารกิจสำเร็จ", aQ.Title); setTimeout(() => { closeGame(); }, 3500);
-                } else { document.getElementById('gStatus').innerHTML = `<span style="color:#2e7d32;">เก่งมาก! คำต่อไปเลยครับ</span>`; updateQuestView(""); }
-            } else { document.getElementById('gStatus').innerHTML = `<span style="color:#ef6c00; font-size:16px;">ระบบได้ยิน: <b>"${spk}"</b><br>ลองพยายามอ่านต่อคำที่เหลือนะ!</span>`; }
+            document.getElementById('gText').innerHTML = displayHtml;
+
+            if(percent >= 90) {
+                document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 ยอดเยี่ยม! คุณอ่านถูกต้อง ${percent}%</span>`;
+                setTimeout(() => { triggerQuestSuccess(); }, 2000);
+            } else {
+                document.getElementById('gStatus').innerHTML = `<span style="color:#f44336; font-weight:bold;">😢 อ่านถูก ${percent}% (ต้องได้อย่างน้อย 90%)<br>ลองกดไมค์แก้ตัวใหม่อีกรอบนะ!</span>`;
+                storyTranscript = ""; 
+            }
+        }
+
+        
+
+        // 🌟 ฟังก์ชันแจกรางวัลรวบยอด
+        function triggerQuestSuccess() {
+            let rwData = String(aQ.RewardPoints).split(',');
+            let baseExp = Number(rwData[0]) || 0;
+            let baseCoin = rwData[1] !== undefined ? Number(rwData[1]) : baseExp;
+            
+            let expMult = 1, coinMult = 1;
+            let currentBuffs = String(curU.activeBuff || "");
+            if(currentBuffs.includes('buff_exp') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) expMult = 2;
+            if(currentBuffs.includes('buff_coins') || currentBuffs.includes('double_exp') || currentBuffs.includes('buff') && !currentBuffs.includes('_')) coinMult = 2;
+            
+            let ptsEarned = baseExp * expMult; let coinsEarned = baseCoin * coinMult; curU.activeBuff = ""; 
+            
+            let extraMsg = "";
+            if(aQ.ItemRewardID && String(aQ.ItemRewardID).trim() !== "") {
+                let rwId = String(aQ.ItemRewardID).trim();
+                curU.inventory.push(rwId);
+                let rwObj = allS.find(s => String(s.ItemID) === rwId);
+                if(rwObj) extraMsg = `<br><span style="color:#8e24aa; font-size:16px;">🎁 โบนัสพิเศษ: ได้รับ [${rwObj.ItemName}] เข้ากระเป๋าแล้ว!</span>`;
+            }
+
+            document.getElementById('gStatus').innerHTML = `<span style="color:#4caf50; font-weight:bold;">🎉 สำเร็จภารกิจ!<br>ได้รับ ${ptsEarned} Exp และ ${coinsEarned} Coins${extraMsg}</span>`;
+            curU.points += ptsEarned; curU.coins += coinsEarned; curU.completedQuests.push(String(aQ.QuestID));
+            refreshUI(); syncDB("ภารกิจสำเร็จ", aQ.Title); setTimeout(() => { closeGame(); }, 3500);
+        }
+        // 🌟 ฟังก์ชันเล่นเสียงเอฟเฟกต์
+        function playSFX(id) {
+            let sound = document.getElementById(id);
+            if(sound) { sound.currentTime = 0; sound.play().catch(e=>{}); }
+        }
+
+// 🌟 1. ฟังก์ชันเมื่อเด็กกดปุ่มลำโพง (อัปเดต Popup สวยงาม + เช็ครหัส)
+       // 🌟 2. ฟังก์ชันเมื่อเด็กกดปุ่มลำโพง (อัปเดตระบบเช็คกระเป๋าให้แม่นยำ)
+        async function handleSpeakerBtn() {
+            let starCount = aQ.Difficulty.replace(/\s/g, '').length;
+
+            if (starCount <= 3) {
+                playTTS();
+                return;
+            }
+
+            if (isSpeakerActive) {
+                playTTS(); 
+                return;
+            }
+
+            let mySpeakerItemId = "ITEM_SPEAKER"; 
+            let hasItem = false;
+            let realUserObj = null;
+            
+            // 🔍 กวาดหาตัวแปรข้อมูลนักเรียน
+            if (typeof myU !== 'undefined' && myU) {
+                realUserObj = myU;
+            } else if (typeof currentUser !== 'undefined' && currentUser) {
+                realUserObj = currentUser;
+            } else {
+                let currentStudentId = document.getElementById('studentId') ? document.getElementById('studentId').value : null;
+                if (typeof allU !== 'undefined' && currentStudentId) {
+                    realUserObj = allU.find(x => String(x.UserID) === String(currentStudentId));
+                }
+            }
+
+            // 🔍 เช็คไอเทมแบบครอบคลุมทั้งรูปแบบข้อความ (String) และ Array
+            if (realUserObj && realUserObj.Inventory) {
+                let inv = realUserObj.Inventory;
+                if (typeof inv === 'string' && inv.includes(mySpeakerItemId)) {
+                    hasItem = true;
+                } else if (Array.isArray(inv) && inv.includes(mySpeakerItemId)) {
+                    hasItem = true;
+                }
+            }
+
+            if (!hasItem) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีไอเทมตัวช่วย',
+                    text: "โหมดความยาก 4-5 ดาว ต้องใช้ 'ตัวช่วยฟัง ENG' 1 ชิ้น สามารถหาซื้อได้จากร้านค้านะครับ!",
+                    confirmButtonColor: '#00838f',
+                    confirmButtonText: 'ตกลง'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'ใช้ไอเทมตัวช่วย?',
+                text: "ต้องการใช้ 'ตัวช่วยฟัง ENG' 1 ชิ้น เพื่อฟังเสียงอ่านไหม?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#4caf50',
+                cancelButtonColor: '#f44336',
+                confirmButtonText: '✔ ใช่, ใช้เลย!',
+                cancelButtonText: '❌ ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    consumeSpeakerItem(mySpeakerItemId, realUserObj.UserID); 
+                }
+            });
+        }
+
+        // 🌟 2. ฟังก์ชันหักไอเทมลำโพง (อัปเดต Popup สวยงาม)
+        // รับค่า userId เข้ามาด้วย
+        // 🌟 3. ฟังก์ชันหักไอเทมลำโพง
+        async function consumeSpeakerItem(itemId, userId) {
+            if(typeof sl === "function") sl("กำลังใช้งานไอเทม..."); 
+            
+            let payload = { action: "consumeItem", userId: userId, itemId: itemId }; 
+            try {
+                let res = await (await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })).json();
+                
+                isSpeakerActive = true; 
+                
+                // อัปเดตหักไอเทมออกจากหน้าจอแบบทันที
+                if (typeof myU !== 'undefined' && myU && myU.Inventory) {
+                    myU.Inventory = myU.Inventory.replace(itemId, "").replace(/,,/g, ","); 
+                }
+                
+                if(typeof hl === "function") hl(); 
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'เปิดใช้งานตัวช่วยสำเร็จ!',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+                
+                playTTS(); // เล่นเสียงทันที
+                
+            } catch(e) {
+                if(typeof hl === "function") hl();
+                console.error(e);
+            }
+        }
+        // 3. ฟังก์ชันพูดออกเสียง (Text to Speech)
+        // 🌟 1. ฟังก์ชันพูดออกเสียง (เพิ่มระบบดักโกง ปิดไมค์อัตโนมัติ)
+        function playTTS() {
+            // --- 🛑 บังคับปิดไมค์ก่อนลำโพงจะดัง ---
+            if (typeof isRec !== 'undefined' && isRec === true) {
+                rec.stop(); // สั่งหยุดฟังเสียง
+                isRec = false; // ปรับสถานะไมค์เป็นปิด
+                
+                // คืนค่าปุ่มไมค์ให้กลับเป็นสถานะปกติ (สีเขียว)
+                let micBtn = document.getElementById('micBtn');
+                if (micBtn) {
+                    micBtn.innerHTML = "🎤 กดเริ่มฟัง";
+                    micBtn.style.background = "#4caf50";
+                }
+                
+                // แจ้งเตือนสถานะให้เด็กรู้ว่าไมค์ปิดชั่วคราว
+                document.getElementById('gStatus').innerHTML = "<span style='color:#ef6c00;'>ระบบปิดไมค์ชั่วคราวขณะลำโพงทำงาน...</span>";
+            }
+            // --------------------------------
+
+            let textToRead = qSet[qIdx].expected;
+            let msg = new SpeechSynthesisUtterance(textToRead);
+            msg.lang = 'en-US';
+            msg.rate = 0.85; // ความเร็วเสียง
+            
+            // เมื่อลำโพงพูดจบ ให้แจ้งเตือนว่ากลับมากดไมค์พูดได้แล้ว
+            msg.onend = function() {
+                document.getElementById('gStatus').innerHTML = "<span style='color:#2e7d32; font-weight:bold;'>🔊 ฟังจบแล้ว กดปุ่มไมค์เพื่อพูดได้เลย!</span>";
+            };
+            
+            window.speechSynthesis.speak(msg);
+        }
+// 🌟 ฟังก์ชันสำหรับปิดหน้าต่างภารกิจ
+        function closeGame() {
+            // 1. ซ่อนหน้าต่างป๊อปอัป
+            let modal = document.getElementById('gameModal');
+            if (modal) {
+                modal.style.display = "none";
+            }
+            
+            // 2. สั่งปิดไมค์ถ้ากำลังเปิดอยู่
+            if (typeof isRec !== 'undefined' && isRec === true) {
+                rec.stop();
+                isRec = false;
+                
+                // คืนค่าปุ่มไมค์
+                let micBtn = document.getElementById('micBtn');
+                if (micBtn) {
+                    micBtn.innerHTML = "🎤 กดเริ่มฟัง";
+                    micBtn.style.background = "#4caf50";
+                }
+            }
+            
+            // 3. กลับมาเปิดเพลงพื้นหลัง (ถ้ามี)
+            let bgm = document.getElementById('bgMusic'); 
+            if (bgm) {
+                // ใช้ .catch เพื่อป้องกัน Error กรณีเบราว์เซอร์บล็อกการเล่นเสียงอัตโนมัติ
+                let playPromise = bgm.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log("พักการเล่นเพลงชั่วคราว");
+                    });
+                }
+            }
         }
     </script>
 </body>
