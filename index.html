@@ -96,6 +96,39 @@
 /* ดัน Popup แจ้งเตือนให้อยู่หน้าสุดเสมอ */
  .swal2-container {
     z-index: 99999 !important;
+/* 📱 ปรับแต่ง UI ให้พอดีกับหน้าจอมือถือ */
+@media screen and (max-width: 768px) {
+    /* 1. อนุญาตให้ชื่อที่ยาวมากๆ ตัดขึ้นบรรทัดใหม่ได้อัตโนมัติ */
+    #uName {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        font-size: 16px !important;
+        line-height: 1.3 !important;
+    }
+
+    /* 2. ดันฉายาให้ตกลงมาอยู่ข้างใต้เลเวล จะได้ไม่เบียดกันทะลุจอ */
+    #uTitle {
+        display: block !important;
+        font-size: 12px !important;
+        margin-top: 5px !important;
+    }
+
+    /* 3. บังคับให้กล่องที่คลุมข้อมูลทั้งหมดไม่ขยายกว้างกว่าหน้าจอ */
+    /* (เคล็ดลับ: min-width: 0; จะหยุด Flexbox ไม่ให้ดันทะลุขอบ) */
+    .profile-text-container { 
+        flex: 1 !important;
+        min-width: 0 !important; 
+        overflow: hidden !important;
+    }
+
+    /* 4. จุดแสดงไอคอนบัฟ ให้เรียงต่อกันและปัดบรรทัดใหม่ถ้ายาวเกิน */
+    .buff-zone {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+    }
+}
+
     </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -1197,9 +1230,7 @@ let t = q.Type;
             if(sound) { sound.currentTime = 0; sound.play().catch(e=>{}); }
         }
 
-// 🌟 1. ฟังก์ชันเมื่อเด็กกดปุ่มลำโพง (อัปเดต Popup สวยงาม + เช็ครหัส)
-       // 🌟 2. ฟังก์ชันเมื่อเด็กกดปุ่มลำโพง (อัปเดตระบบเช็คกระเป๋าให้แม่นยำ)
-        async function handleSpeakerBtn() {
+async function handleSpeakerBtn() {
             let starCount = aQ.Difficulty.replace(/\s/g, '').length;
 
             if (starCount <= 3) {
@@ -1208,35 +1239,14 @@ let t = q.Type;
             }
 
             if (isSpeakerActive) {
-                playTTS(); 
+                playTTS();
                 return;
             }
 
-            let mySpeakerItemId = "ITEM_SPEAKER"; 
-            let hasItem = false;
-            let realUserObj = null;
+            let mySpeakerItemId = "ITEM_SPEAKER";
             
-            // 🔍 กวาดหาตัวแปรข้อมูลนักเรียน
-            if (typeof myU !== 'undefined' && myU) {
-                realUserObj = myU;
-            } else if (typeof currentUser !== 'undefined' && currentUser) {
-                realUserObj = currentUser;
-            } else {
-                let currentStudentId = document.getElementById('studentId') ? document.getElementById('studentId').value : null;
-                if (typeof allU !== 'undefined' && currentStudentId) {
-                    realUserObj = allU.find(x => String(x.UserID) === String(currentStudentId));
-                }
-            }
-
-            // 🔍 เช็คไอเทมแบบครอบคลุมทั้งรูปแบบข้อความ (String) และ Array
-            if (realUserObj && realUserObj.Inventory) {
-                let inv = realUserObj.Inventory;
-                if (typeof inv === 'string' && inv.includes(mySpeakerItemId)) {
-                    hasItem = true;
-                } else if (Array.isArray(inv) && inv.includes(mySpeakerItemId)) {
-                    hasItem = true;
-                }
-            }
+            // 🔍 ใช้ตัวแปร curU.inventory ที่เป็น Array เก็บข้อมูลของระบบโดยตรง
+            let hasItem = curU.inventory.includes(mySpeakerItemId);
 
             if (!hasItem) {
                 Swal.fire({
@@ -1260,29 +1270,30 @@ let t = q.Type;
                 cancelButtonText: '❌ ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    consumeSpeakerItem(mySpeakerItemId, realUserObj.UserID); 
+                    consumeSpeakerItem(mySpeakerItemId, curU.id);
                 }
             });
         }
 
-        // 🌟 2. ฟังก์ชันหักไอเทมลำโพง (อัปเดต Popup สวยงาม)
-        // รับค่า userId เข้ามาด้วย
-        // 🌟 3. ฟังก์ชันหักไอเทมลำโพง
+
+        
+        // 🌟 2. ฟังก์ชันหักไอเทมลำโพง
         async function consumeSpeakerItem(itemId, userId) {
-            if(typeof sl === "function") sl("กำลังใช้งานไอเทม..."); 
+            if(typeof sl === "function") sl("กำลังใช้งานไอเทม...");
             
-            let payload = { action: "consumeItem", userId: userId, itemId: itemId }; 
+            let payload = { action: "consumeItem", userId: userId, itemId: itemId };
             try {
                 let res = await (await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })).json();
                 
-                isSpeakerActive = true; 
+                isSpeakerActive = true;
                 
-                // อัปเดตหักไอเทมออกจากหน้าจอแบบทันที
-                if (typeof myU !== 'undefined' && myU && myU.Inventory) {
-                    myU.Inventory = myU.Inventory.replace(itemId, "").replace(/,,/g, ","); 
+                // 🔍 อัปเดตหักไอเทมออกจาก array ของผู้เล่นทันที
+                let idx = curU.inventory.indexOf(itemId);
+                if (idx > -1) {
+                    curU.inventory.splice(idx, 1);
                 }
                 
-                if(typeof hl === "function") hl(); 
+                if(typeof hl === "function") hl();
                 
                 Swal.fire({
                     icon: 'success',
@@ -1298,7 +1309,8 @@ let t = q.Type;
                 console.error(e);
             }
         }
-        // 3. ฟังก์ชันพูดออกเสียง (Text to Speech)
+        
+
         // 🌟 1. ฟังก์ชันพูดออกเสียง (เพิ่มระบบดักโกง ปิดไมค์อัตโนมัติ)
         function playTTS() {
             // --- 🛑 บังคับปิดไมค์ก่อนลำโพงจะดัง ---
